@@ -1,0 +1,10 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.hroov.souvenirhunt.launcher" android:versionCode="2" android:versionName="1.1">
+  <uses-sdk android:minSdkVersion="31" android:targetSdkVersion="34" />
+  <uses-permission android:name="com.hroov.souvenirhunt.permission.CONTROL" />
+  <queries><package android:name="com.hroov.souvenirhunt" /></queries>
+  <application android:label="SouvenirHunt 실행" android:icon="@drawable/ic_launcher" android:theme="@android:style/Theme.Material.NoActionBar" android:allowBackup="false">
+    <activity android:name="com.hroov.souvenirhunt.launcher.LauncherActivity" android:exported="true" android:screenOrientation="portrait">
+      <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>
+    </activity>
+  </application>
+</manifest>

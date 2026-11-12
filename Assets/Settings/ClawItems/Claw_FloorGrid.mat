@@ -1,0 +1,46 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Claw_FloorGrid
+  m_Shader: {fileID: 4800000, guid: aab59f8c2bc89444ca9b78067fae0d82, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs: []
+    m_Ints: []
+    m_Floats:
+    - _Cell: 0.07
+    - _ChuteX: -0.3395
+    - _ChuteZ: 3.4445
+    - _GridAlpha: 0.16
+    - _HalfX: 0.828
+    - _Line: 0.0035
+    - _MaxZ: 4.388
+    - _MinZ: 2.7319999
+    - _RippleStart: -100
+    - _ScanPeriod: 3.2
+    - _ScanStrength: 0.35
+    - _ScanWidth: 0.06
+    m_Colors:
+    - _Color: {r: 0.3, g: 0.85, b: 1, a: 1}
+    - _RippleColor: {r: 0.4, g: 1, b: 1, a: 1}
+    - _RippleOrigin: {r: 0, g: 0, b: 0, a: 0}
+    - _ScanColor: {r: 0.4, g: 0.95, b: 1, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

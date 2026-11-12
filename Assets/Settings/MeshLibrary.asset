@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8a97365cb01bd3146aa0d9fe0c99c569, type: 3}
+  m_Name: MeshLibrary
+  m_EditorClassIdentifier: 
+  entries:
+  - label: "\uC0DD\uC218(\uB354\uBBF8 \uD551\uD06C \uCEA1\uC290)"
+    mesh: {fileID: 10208, guid: 0000000000000000e000000000000000, type: 0}
+    material: {fileID: 2100000, guid: 072262582d5417e46b86ae2bd7ec4761, type: 2}
+  - label: "\uD0A4\uB9C1(KoreaCubeKeyring)"
+    mesh: {fileID: -2432090755550338912, guid: d4d6df763e536504795ffd7f6846b65a, type: 3}
+    material: {fileID: 2100000, guid: 2c1d24d504ed4d341a74511e57f74c83, type: 2}
+  - label: "\uC57D\uACFC(\uB354\uBBF8 \uB178\uB791 \uAD6C)"
+    mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
+    material: {fileID: 2100000, guid: c733c8a5de55ba2469ce984b2aa349b8, type: 2}
+  - label: "\uC120\uBB3C\uC0C1\uC790(\uB354\uBBF8 \uD770 \uD050\uBE0C)"
+    mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+    material: {fileID: 2100000, guid: c6a1cec11c00a4b40adc32a4bb07a344, type: 2}
+  - label: "\uC5EC\uBD84(MeshyModel)"
+    mesh: {fileID: -2432090755550338912, guid: f5cd4da9b5a961543b5e1c0c8bed1dc0, type: 3}
+    material: {fileID: 2100000, guid: c6d3e8ba8b2ea4a4bac777618675d24e, type: 2}

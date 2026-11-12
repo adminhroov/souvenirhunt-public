@@ -1,0 +1,50 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a8e908d6fab13224fa1ff0556b4e24d0, type: 3}
+  m_Name: Light_warehouse
+  m_EditorClassIdentifier: 
+  id: warehouse
+  label: "\uD615\uAD11\uB4F1+\uCC3D HDRI"
+  sunEuler: {x: 51.737896, y: 195.28618, z: 0}
+  sunColor: {r: 1, g: 1, b: 1, a: 1}
+  sunIntensity: 0.95
+  ambientSH:
+  - 0.89848006
+  - 0.094513394
+  - 0.054579515
+  - 0.10570258
+  - 0.049366675
+  - 0.030296573
+  - 0.017600289
+  - 0.089492045
+  - 0.033990305
+  - 0.87535524
+  - 0.10772541
+  - 0.03626595
+  - 0.10306001
+  - 0.049665317
+  - 0.024093669
+  - 0.015458151
+  - 0.09753274
+  - 0.03599836
+  - 0.81432575
+  - 0.14483637
+  - 0.030866554
+  - 0.09860573
+  - 0.050576687
+  - 0.023134697
+  - 0.01559489
+  - 0.10032596
+  - 0.03893635
+  reflection: {fileID: 8900000, guid: d49204363fc8f024bbc71e1a335c2f54, type: 3}
+  reflectionIntensity: 1.325022
+  sourceHash: 9668bd6b48ac1084d068deae7af4280f1t

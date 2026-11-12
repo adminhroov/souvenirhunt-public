@@ -1,0 +1,124 @@
+# XR 기념품 찾기 운영 설정 — 메모장으로 수정 후 UTF-8로 저장
+# 한 줄이 잘못돼도 그 줄만 무시되고 기본값이 쓰입니다. 앱은 죽지 않습니다.
+timeLimitSeconds=180
+targetCount=10
+countdownSeconds=3
+warningTimeSeconds=30
+useFixedLayout=false
+
+# 실제 부스 설치 모드: true면 가상 가구가 안 보이게 됨(현실 부스가 대신 보임). 수집품 가림은 유지됨
+envOcclusionMode=false
+
+# 방 구조물(바닥·벽·창문·천장등)을 보이게 할지. 글래스 FOV가 좁아 큰 평면의 잘린 경계가 드러나므로 기본 숨김.
+# 가구(책상·모니터·캐비닛)는 이 설정과 무관하게 항상 보입니다.
+showStructures=false
+
+# 성능 점검용: true면 화면 상단에 FPS 표시 (운영 중엔 false)
+showFps=false
+
+# 렌더 품질(60FPS 튜닝용, 리셋 시 즉시 반영): bloom은 성능 위해 기본 OFF(글로우 이미션은 유지), renderScale 0.5~1.0(XREAL 글래스는 무시 — 10-15 실측), hdr는 빌드 고정(OFF)
+bloom=false
+renderScale=0.8
+hdr=false
+
+# 사운드(10-12부터 켬 — VIP 인증·보상 효과음). false면 전부 무음. 음원이 없는 자리는 원래 무음
+audio=true
+
+# 시간초과(10개 못 채움)여도 보상 안내 화면을 열지: 기본 false(전체 수집 시에만 보상). 발주처 확정 시 변경
+rewardOnPartial=false
+
+# 보상: 문구와 meshIndex만 수정. meshIndex는 앱 내부 메시 배열의 순번(0부터)
+reward1.text=ICIS 생수
+reward1.meshIndex=0
+reward2.text=I LOVE KOREA 키링
+reward2.meshIndex=1
+reward3.text=신라약과
+reward3.meshIndex=2
+
+# ── 인형뽑기 미션형(Claw 씬) ── 제한 시간 안에 키링 큐브를 정해진 개수만큼 배출구에 넣으면 성공(10-28)
+# 집게는 한 번에 한 개만 잡힘. 세라믹·유리 그릇은 방해물(넣어도 점수·진행 없음), 캡슐은 무득점, 폭탄은 집게가 닿는 순간 폭발 — 기계 안 물체가 흩어짐(감점 없음)
+# 제한 시간(초) 10~300 / 성공 = 키링 큐브 이만큼 넣기 1~20(큐브 수보다 많으면 큐브 수로) / 남은 n초부터 적색 점멸
+clawTimeLimitSeconds=60
+clawTargetCount=5
+clawWarningTimeSeconds=10
+# 미션 성공 보상 화면에 보일 상품 이름(키링 큐브가 3D로 돌며 함께 보임). 비우면 기본값. En = 영어 화면일 때
+clawRewardText=광화문 루빅큐브 키링
+clawRewardTextEn=Gwanghwamun Rubik's Cube Keyring
+# 화면 언어(11-10): ko(기본) | en. 실행 앱(Beam Pro)에서 한국어/English를 고르면 그것이 우선. 빌드 불필요
+clawLanguage=ko
+# 시점 기울기(11-10, ClawGame과 같은 시점): 기계가 드러날 때부터 화면을 이 각도(0~30°, 0 = 끔)만큼 아래로 숙임. 빌드 불필요
+clawViewTiltDeg=13.2
+# 기계 안 개수(10-28 기본 = 받침 더미 없이 바닥에 상품 20개: 큐브 10·세라믹 5·유리 5): 세라믹 그릇 0~20 · 유리 그릇 0~20 · 키링 큐브 0~20 · 캡슐 0~50 · 폭탄 0~8 (합계는 배치 상한 안으로 자동 조정)
+# 상품(큐브·그릇)은 집게가 닿는 안전 구역(벽 쪽 끝·배출구 옆 제외)에 놓이고 다시 놓인다
+clawCeramicCount=5
+clawGlassCount=5
+clawKeyringCount=10
+clawFillerCount=0
+clawBombCount=0
+# 폭발 세기: 옆으로 퍼지는 속도 m/s(0.5~4) / 튀는 높이 비율(0.1~0.9, 바닥~캐리지 아래 대비)
+clawBombForce=1.6
+clawBombLift=0.65
+# 조이스틱: false=패드 중심에서 떨어진 거리(기본), true=처음 댄 지점을 중심으로
+clawStickRelative=false
+# Beam Pro 회전 방향(left=왼쪽으로 90° 눕힘, 기본). 실기기에서 조이스틱 축이 반대로 느껴지면 right로
+clawPadRotation=left
+# 조작감: 캐리지 속도 m/s(0.1~1.0, 10-28 0.35 → 0.42), 집게 하강 속도 m/s(0.2~2.0), 아이템 속도 상한(1~8)
+clawCarriageSpeed=0.42
+clawHeadSpeed=0.6
+clawMaxItemSpeed=3.5
+# 아이템 때깔(비주얼): 테두리 빛 배율 0~3(0 = 끔) / 광택(환경 반사) 배율 0~2(0 = 끔). 글래스에서 보며 맞춤(빌드 불필요)
+clawRim=1
+clawReflection=1
+# 성능: 부스 full(원본) | lite(가벼운 재질, 노멀맵·반사 없음) | off(부스 안 그림) / 기계 full | lite / 텍스처 이방성 필터 0~16(낮을수록 가벼움)
+clawBooth=lite
+clawMachine=lite
+clawAniso=4
+# 조준 표시 색(집게에서 내려오는 옅은 빛 원뿔·잡기 범위를 비추는 은은한 스포트라이트): white(기본) / gold / cyan / pink / lime / white-cyan 또는 #RRGGBB. 빌드 불필요
+clawGuideColor=white
+# 조명(자연광): daylight(코드로 만든 낮 하늘, 기본) / studio(예전 스튜디오 조명) / lebombo(실내 자연 채광 사진) / warehouse(형광등+창 사진). 빌드 불필요
+clawLighting=daylight
+# 받침 더미: false(기본, 10-28) = 바닥에 상품만 / true = 바닥을 움직이지 않는 상품 더미로 채우고 그 위에 실물 한 층(10-20~10-26 — 잡거나 폭발 옆이면 진짜로 바뀜). 빌드 불필요
+clawBed=false
+# 받침 맨 윗층: true(기본) = 받침 더미 맨 위 한 층을 진짜 캡슐로(집게·폭발에 움직임) / false = 받침 전부 고정(예전 — 성능이 모자랄 때). 빌드 불필요
+clawRealTopLayer=true
+# 영상 뒤 디지털 디졸브 전환: 검정(현실) → 그리드 → 픽셀 분해 → 기계·부스 등장 → [START]. false면 예전처럼 안내 → 기계가 솟음
+# 기계 다가오기(10-28): 디졸브가 끝나면 기계·부스가 clawApproachDistance m(0~8, 0 = 끔) 멀리서 clawApproachSeconds초(0.3~4) 동안
+#   점점 가속하며(clawApproachPower 1~5 — 1 = 등속, 클수록 끝에 몰아서 빠름) 제자리로 다가온 뒤 [START]. 빌드 불필요
+clawApproachDistance=3
+clawApproachSeconds=1.5
+clawApproachPower=3
+
+# ── MR VIP 인증 연출 ── 체험자마다 맨 처음(게임 전): Beam Pro [시연 시작] → 홍채·시선 인증(정면 EYE SCAN 가운데 응시) → ACCESS GRANTED → 게임
+# vipStartButton=false면 [시연 시작] 대기 없이 바로 홍채·시선(10-26 이전). 안경 센서가 벗었다고 알리면 [시연 시작]을 한 번 더 눌러야 시작
+# vipCardStep=true면 그 앞에 예전 STEP 01 카드키 인증(가슴 앞 스캐너 패널 — [인증] 또는 Beam Pro 수평 유지, 2초) — 기본 false(10-26 제거, 되돌리기용)
+# vipIntroEnabled=false면 연출 없이 바로 게임. 자세 감지(카드키 단계만): 수평에서 vipPoseTiltDeg(5~60)도 안을 vipPoseHoldSeconds(0.2~3)초 유지
+# 시선: 정면 홍채 중심에서 vipGazeAngleDeg(2~15)도 안을 vipGazeSeconds(0.5~5)초 연속 응시(벗어나면 처음부터)
+revealEnabled=true
+vipIntroEnabled=true
+vipCardStep=false
+vipStartButton=true
+vipPoseDetect=true
+vipPoseTiltDeg=25
+vipPoseHoldSeconds=0.8
+vipGazeSeconds=2
+vipGazeAngleDeg=6
+
+# ── 안경 착용 감지·자동 처음으로(10-26) ── 안경 근접 센서가 벗음을 알리면 홍채 인증을 멈추고, Beam Pro 화면에 카운트다운 →
+#   clawWearResetSeconds(0~600, 0 = 안 감)초 안에 다시 안 쓰면 처음 화면(홍채 인증)으로. 결과 화면에서 [보상 확인] 전이면 처음으로 가지 않음.
+#   앱이 백그라운드에 clawResumeResetSeconds(0~600, 0 = 끔)초 이상 있다 돌아오면(다시 실행) 처음으로. clawWearDetect=false면 착용 무시
+clawWearDetect=true
+clawWearResetSeconds=30
+clawResumeResetSeconds=3
+
+# ── 경품 연동(오스리움) ── 게임 시작 시 참가자 DID 조회 → [보상 확인] 시 경품(NFT) 지급 요청. 결과 팝업은 진행자 화면에 뜸
+# 진행자는 기기를 건네기 전에 반드시 진행자 화면에서 [로그아웃] → 다음 참가자 [이벤트 로그인](안 하면 앞 참가자 DID로 요청됨)
+# prizeToken은 API 정의서의 토큰을 붙여 넣음. 경품 = 키링 큐브 상품(10-28부터 그릇은 점수가 없어 경품도 키링만) —
+# nftId는 마켓 상품 카드 맨 위 번호. prizeNftIdKeyring이 0이면 요청 안 함. prizeNftIdCeramic·Glass는 읽기만(10-28부터 안 씀 — 되돌리기용)
+# 10-28: 셋 다 25(오스리움 호출 테스트용 번호 — 이전 20 = 광화문 루빅큐브 키링)
+prizeEnabled=false
+prizeServer=https://dataspace.authrium.com
+prizeToken=
+prizeNftIdCeramic=25
+prizeNftIdGlass=25
+prizeNftIdKeyring=25
+prizeTimeoutSeconds=8
