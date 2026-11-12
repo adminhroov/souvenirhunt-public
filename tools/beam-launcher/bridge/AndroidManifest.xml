@@ -1,0 +1,14 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.hroov.souvenirhunt.bridge">
+  <!-- 10-29 감사: uses-sdk가 없으면 병합기가 targetSdk < 4로 보고 READ_PHONE_STATE 등을 암묵 추가 → 게임과 같은 31로 명시 -->
+  <uses-sdk android:minSdkVersion="31" />
+  <permission android:name="${applicationId}.permission.CONTROL" android:protectionLevel="signature" />
+  <!-- 10-29 감사 I1: 상대 변형 종료(KILL_BACKGROUND_PROCESSES·queries) 제거 — Android 14에서 무효 -->
+  <!-- 10-29 감사: 기기 config(경품 토큰)·경품 로그가 adb/클라우드 백업·기기 이전에 실리지 않게(게임 APK에 병합됨) -->
+  <application android:allowBackup="false" android:fullBackupContent="false" android:dataExtractionRules="@xml/data_extraction_rules">
+    <activity android:name="com.hroov.souvenirhunt.bridge.BeamEntryActivity"
+      android:process=":entry" android:exported="true"
+      android:permission="${applicationId}.permission.CONTROL"
+      android:launchMode="singleTask" android:taskAffinity="${applicationId}.entry"
+      android:screenOrientation="portrait" android:theme="@android:style/Theme.Material.NoActionBar" />
+  </application>
+</manifest>

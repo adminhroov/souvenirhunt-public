@@ -1,0 +1,50 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a8e908d6fab13224fa1ff0556b4e24d0, type: 3}
+  m_Name: Light_lebombo
+  m_EditorClassIdentifier: 
+  id: lebombo
+  label: "\uC2E4\uB0B4 \uC790\uC5F0 \uCC44\uAD11 HDRI"
+  sunEuler: {x: 20, y: 221.40092, z: -0.00000045428342}
+  sunColor: {r: 0.99149173, g: 0.9996413, b: 1, a: 1}
+  sunIntensity: 0.95
+  ambientSH:
+  - 0.9536465
+  - 0.018073471
+  - 0.030520523
+  - 0.22180846
+  - -0.05729023
+  - 0.0051156715
+  - -0.015379939
+  - 0.060519565
+  - 0.03310332
+  - 0.86315197
+  - 0.04661035
+  - 0.041839596
+  - 0.24016756
+  - -0.053402923
+  - 0.0059520304
+  - -0.012133601
+  - 0.08190424
+  - 0.04552675
+  - 0.7702734
+  - 0.07529946
+  - 0.06162924
+  - 0.26861766
+  - -0.050016433
+  - 0.004483109
+  - -0.008227851
+  - 0.1153511
+  - 0.05858685
+  reflection: {fileID: 8900000, guid: 8b046a6392125634b93a3fc18b2c32ab, type: 3}
+  reflectionIntensity: 1.2401029
+  sourceHash: 50c06c2b30bd0a439b2f46fd657d87a51t

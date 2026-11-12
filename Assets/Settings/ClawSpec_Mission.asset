@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 48d1155755ea49b4da959ef5b54046b1, type: 3}
+  m_Name: ClawSpec_Mission
+  m_EditorClassIdentifier: 
+  ceramic:
+    widthToHead: 0.5
+    heightToWidth: 0.40693697
+    mass: 0.06
+  glass:
+    widthToHead: 0.46
+    heightToWidth: 0.90913534
+    mass: 0.05
+  capsule:
+    widthToHead: 0.38
+    heightToWidth: 1
+    mass: 0.04
+  bomb:
+    widthToHead: 0.38
+    heightToWidth: 1
+    mass: 0.06
+  keyring:
+    widthToHead: 0.42
+    heightToWidth: 1
+    mass: 0.05
+  gap: 0.02
+  jitter: 0.008
+  maxPlaceLayers: 2
+  poolSize: 280
+  linearDamping: 0.6
+  angularDamping: 1.5
+  sleepThreshold: 0.02
+  solverIterations: 8
+  solverVelocityIterations: 2
+  contactOffset: 0.005

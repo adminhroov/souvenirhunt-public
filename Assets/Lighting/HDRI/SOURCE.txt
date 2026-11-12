@@ -1,0 +1,3 @@
+Poly Haven (https://polyhaven.com) HDRIs, CC0 license.
+- lebombo_1k.hdr — https://polyhaven.com/a/lebombo
+- empty_warehouse_01_1k.hdr — https://polyhaven.com/a/empty_warehouse_01
