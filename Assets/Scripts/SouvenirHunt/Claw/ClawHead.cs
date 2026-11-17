@@ -16,7 +16,8 @@ namespace SouvenirHunt
     /// </summary>
     public class ClawHead : MonoBehaviour
     {
-        public enum Phase { Idle, Descend, Dwell, Attach, Ascend, Travel, DropLower, Drop, Recoil, Return }
+        /// <summary>10-29 Home = 배출 뒤 쉬는 높이로 돌아와 캐리지가 가운데로 자동 이동하는 중(조이스틱·잡기 막힘) — 11-16 B에서 A로 이식</summary>
+        public enum Phase { Idle, Descend, Dwell, Attach, Ascend, Travel, DropLower, Drop, Recoil, Return, Home }
 
         [SerializeField] ClawCarriage carriage;
         [SerializeField] ClawBasket basket;
@@ -41,7 +42,8 @@ namespace SouvenirHunt
         float bounceT = -1f, hangBounce; // 바닥 출렁임
         ClawItem grabTarget;            // 잡기 시작 때 가이드가 가리킨 것(Dwell에서 우선)
         float settleT = -1f;            // 잡기(Attach)에서 발이 다 멈춘 시각
-        ClawItem aimedBomb;             // 폭탄을 겨눠 잡으러 내려감(바닥에 닿으면 폭발)
+        bool homeAfterReturn;           // 10-29 이번 사이클에서 배출구에 놓았다 — 쉬는 높이로 돌아오면 가운데로(Home)
+        ClawItem aimedBomb;            // 폭탄을 겨눠 잡으러 내려감(바닥에 닿으면 폭발)
         ClawItem candidateGrab;         // 조준 중 잡으려는 상품(가이드가 그 길에 닿을 폭탄을 가리켜도 집게는 이걸 잡으러 내려간다 → 폭탄에 닿아 폭발)
 
         /// <summary>배출구로 떨어지는 중인 상품 하나(헤드는 이미 돌아감) — 10-22 여러 개 잡기라 목록</summary>
@@ -266,6 +268,7 @@ namespace SouvenirHunt
         /// <summary>게임 종료 등 — 들고 있던 것은 현 위치에서 놓아(바스켓 안으로 낙하) 헤드는 돌아온다. Recoil은 끝까지.</summary>
         public void Abort()
         {
+            homeAfterReturn = false; // 10-29 게임 종료 등 — 가운데 복귀도 멈춤(캐리지는 그 자리에)
             for (int i = 0; i < held.Count; i++)
             {
                 var item = held[i];
@@ -305,6 +308,7 @@ namespace SouvenirHunt
             foreach (var f in fallers) if (f.item != null) f.item.ReleaseToPool();
             fallers.Clear();
             grabTarget = null;
+            homeAfterReturn = false;
             bounceT = -1f; hangBounce = 0f;
             Candidate = null;
             hang = ClawLayout.CableLength;
@@ -454,6 +458,7 @@ namespace SouvenirHunt
                     if (phaseT >= ReleaseDelaySec)
                     {
                         for (int i = 0; i < held.Count; i++) if (held[i] != null) Release(held[i]);
+                        homeAfterReturn = held.Count > 0; // 10-29 배출했으면 쉬는 높이로 돌아온 뒤 가운데로
                         ClearHeld();
                         recoverT = RecoverSec;
                         BeginMove(L, Mathf.Max(ReturnMinSec, (hang - L) / Mathf.Max(0.05f, AscendSpeed)));
@@ -478,6 +483,18 @@ namespace SouvenirHunt
                         if (recoverT > 0f) recoverT -= dt;
                         if (k < 1f || recoverT > 0f) break;
                         moveDur = 0f;
+                        if (homeAfterReturn) { homeAfterReturn = false; StartHome(); break; } // 10-29 배출 뒤 → 가운데로(아직 Busy·잠금)
+                        carriage.ManualLocked = false;
+                        Set(Phase.Idle);
+                        EventUtil.SafeInvoke(OnCycleEnded);
+                    }
+                    break;
+
+                case Phase.Home:
+                    // 10-29 가운데 도착 → 조준으로. 빈손·폭발 사이클은 여기 오지 않는다(제자리에서 조준)
+                    if (carriage.AutoArrived)
+                    {
+                        carriage.StopAuto();
                         carriage.ManualLocked = false;
                         Set(Phase.Idle);
                         EventUtil.SafeInvoke(OnCycleEnded);
@@ -490,6 +507,21 @@ namespace SouvenirHunt
             ApplyPose();
             if (Current == Phase.Ascend || Current == Phase.Travel || Current == Phase.DropLower) FollowHeld();
             if (Current == Phase.Travel || Current == Phase.DropLower) lockT += dt;
+        }
+
+        /// <summary>10-29 배출 뒤 돌아갈 캐리지 자리(부스 로컬 xz) = 리셋 때 자리(기계 가운데)</summary>
+        public static Vector2 HomeXZ => new Vector2(0f, ClawLayout.CenterZ);
+
+        /// <summary>
+        /// 10-29 사용자 "물건을 집어 배출구에 넣은 뒤 집게가 배출구 위에 멈춰 있지 말고 항상 가운데로 자동 이동": 쉬는 높이로 돌아온 뒤
+        /// 배출구로 갈 때와 같은 자동 이동(TravelSpeed)으로 가운데까지 — 그동안 Busy(잡기 회색)·ManualLocked(조이스틱 무시)
+        /// </summary>
+        void StartHome()
+        {
+            var from = carriage.LocalXZ;
+            carriage.StartAutoMove(HomeXZ, TravelSpeed);
+            Debug.Log($"[Claw] 배출 뒤 가운데 복귀 ({from.x:F2}, {from.y:F2}) → ({HomeXZ.x:F2}, {HomeXZ.y:F2}) {Vector2.Distance(from, HomeXZ):F2}m · {TravelSpeed:F2}m/s");
+            Set(Phase.Home);
         }
 
         void TickGuide()

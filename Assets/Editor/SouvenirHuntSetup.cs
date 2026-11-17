@@ -25,7 +25,7 @@ public static partial class SouvenirHuntSetup
     const string FontFolder = "Assets/Fonts";
 
     /// <summary>앱 버전 — 메뉴 0/10(ApplyIdentity)·11(빌드)이 공유. 릴리스마다 여기만 올린다.</summary>
-    public const string AppVersion = "0.3.1"; // 11-12 A: 11-10 수정(60초·실패 감사 멘트·한영 전환·ClawGame 시점) 반영
+    public const string AppVersion = "0.3.2"; // 11-16 A: B 10-29의 "배출 뒤 집게 가운데 복귀"(ClawHead Phase.Home)만 추가 · 0.3.1(11-12) = 60초·실패 감사 멘트·한영 전환·ClawGame 시점
     /// <summary>메뉴 10 이후 재실행해야 하는 순서 (10 완료 메시지·문서에 사용)</summary>
     public const string RebuildOrder = "13 → 14 → 17 → 19 → 18 → 20 → 21";
 

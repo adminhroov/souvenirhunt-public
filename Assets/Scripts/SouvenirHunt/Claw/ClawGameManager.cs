@@ -384,6 +384,7 @@ namespace SouvenirHunt
                           (keyringCount != cfg.clawKeyringCount || ceramicCount != cfg.clawCeramicCount || glassCount != cfg.clawGlassCount || fillerCount != cfg.clawFillerCount || bombCount != cfg.clawBombCount
                               ? $"  (config {cfg.clawKeyringCount}/{cfg.clawCeramicCount}/{cfg.clawGlassCount}/{cfg.clawFillerCount}/{cfg.clawBombCount} → clamp)" : ""));
             sb.AppendLine($"조이스틱 {(cfg.clawStickRelative ? "상대" : "절대")} · 회전 {cfg.clawPadRotation} · 캐리지 {cfg.clawCarriageSpeed:0.00}m/s · 폭발 {cfg.clawBombForce:0.0}/{cfg.clawBombLift:0.00} · 림 {cfg.clawRim:0.0} · 광택 {cfg.clawReflection:0.0}");
+            sb.AppendLine($"집게: 배출 뒤 가운데 복귀(배출구 이동과 같은 {(head != null ? head.TravelSpeed : 0f):0.00}m/s, 빈손·폭발은 제자리) — 10-29(A 11-16)");
             sb.AppendLine($"렌더 등급: {(ClawRenderTier.Instance != null ? ClawRenderTier.Instance.Summary : "없음")} · 이방성 {cfg.clawAniso}" +
                           (string.IsNullOrEmpty(cfg.perfHide) ? "" : $" · ⚠ perfHide={cfg.perfHide}(진단용 — 운영에선 비움)"));
 
