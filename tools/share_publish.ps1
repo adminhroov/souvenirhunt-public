@@ -43,7 +43,6 @@ function Invoke-Checked([string]$Label, [scriptblock]$Block) {
 $gh = "C:\Program Files\GitHub CLI\gh.exe"
 if (-not (Test-Path $gh)) { $gh = "gh" }
 $tar = Join-Path $env:SystemRoot "System32\tar.exe"
-if (-not (Test-Path $tar)) { throw "tar.exe not found (Windows 10 1803+ required)" }
 $utf8 = New-Object System.Text.UTF8Encoding $false
 
 $main = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
@@ -87,9 +86,13 @@ if ($uEmail) { git -C $work config user.email "$uEmail" }
 
 # 3) 내용 비우고 스냅샷 풀기 → 비공개 경로 제거
 Get-ChildItem -LiteralPath $work -Force | Where-Object { $_.Name -ne ".git" } | Remove-Item -Recurse -Force
-$snap = Join-Path $env:TEMP "souvenirhunt_snapshot.tar"
-Invoke-Checked "git archive" { git -C $main archive --format=tar -o $snap "$SourceRef^{commit}" }
-Invoke-Checked "tar extract" { & $tar -xf $snap -C $work }
+# 11-17 한글 등 비ASCII 경로: Windows tar.exe는 tar 안의 UTF-8 이름을 코드페이지로 풀어 깨뜨린다(애셋 → _좎뀑)
+#       → git archive zip(UTF-8 표시) + .NET ZipFile로 풀기
+$snap = Join-Path $env:TEMP "souvenirhunt_snapshot.zip"
+if (Test-Path -LiteralPath $snap) { Remove-Item -LiteralPath $snap -Force }
+Invoke-Checked "git archive" { git -C $main archive --format=zip -o $snap "$SourceRef^{commit}" }
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+[System.IO.Compression.ZipFile]::ExtractToDirectory($snap, $work)
 Remove-Item -LiteralPath $snap -Force
 foreach ($x in $Exclude) {
   $p = Join-Path $work $x
