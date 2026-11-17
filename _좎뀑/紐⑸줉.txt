@@ -1,0 +1,43 @@
+SouvenirHunt 3D 모델 모음 (2026-11-17 정리)
+
+이 프로젝트에 쓰려고 들여온 3D 모델을 한곳에 모았다. 원본 파일은 옮기지 않고 복사만 했다.
+
+[1_프로젝트에서_쓰는_모델]  Unity 프로젝트 Assets/Models 폴더 그대로(텍스처·재질·프리팹·.meta 포함 — 다른 Unity 프로젝트의 Assets에 그대로 넣으면 참조가 유지된다)
+  폴더              모델 파일                                              쓰임
+  StartUpPark       StartUpPark.fbx, StartUpPark_set.fbx                  지금 인형뽑기 기계(게임 씬에 배치)와 부스 세트
+  CardScanner       futuristic+card+scanner+3d+model.fbx                   인트로(눈 인증) 화면의 카드 스캐너
+  CeramicBowl       ceramic+bowl+3d+model.fbx                              상품: 세라믹 그릇
+  GlassBowl         glass+bowl+3d+model.fbx                                상품: 유리 그릇
+  KoreaCubeKeyring  KoreaCubeKeyring.obj                                   상품: 큐브 키링(경품)
+  Model1            Model1.fbx                                             예전 부스 "XR EXPERIENCE"(09-14 도입, 지금 씬에는 없음)
+  Model2            Model2.fbx                                             예전 인형뽑기 기계(지금 씬에는 없음)
+  Model3            tripo_convert_d20057f9-….fbx                           예전 오락실 집게 기계(지금 씬에는 없음)
+  MeshyModel        MeshyModel.obj                                         Meshy AI 생성 모델(08-13) 가벼운 판 — 예전 수집 모드에서 사용
+
+[2_원본_다운로드]  처음 받은 원본(압축 안에 텍스처 포함)
+  StartUPPark.zip                                   → StartUpPark.fbx + 텍스처
+  StartUpPark_set.fbx                               → StartUpPark_set.fbx
+  futuristic card scanner 3d model.zip              → CardScanner
+  ceramic bowl 3d model.zip                         → CeramicBowl(fbx)
+  glass bowl 3d model.zip                           → GlassBowl
+  arcade+claw+machine+3d+model.zip                  → Model3
+  Model.zip                                         → Model1·Model2 + 텍스처
+  1. ceramic_bowl.glb                               → 예전 세라믹 그릇(아래 3번)의 원본 GLB
+  Meshy_AI_korea_cube_keyring_lo_0813030620_texture_obj.zip  → KoreaCubeKeyring
+  Meshy_AI__0813030638_texture_obj.zip              → MeshyModel의 원본(풀면 194 MB OBJ — 프로젝트에는 가벼운 판만 넣었음)
+
+[3_예전에_쓰던_모델]
+  CeramicBowl_obj_glb   10-13에 들여왔다가 10-15에 fbx 그릇으로 바꾸며 지운 세라믹 그릇(GLB 원본 + OBJ 변환본 + 텍스처 + 재질). git 기록에서 꺼냈다.
+
+넣지 않은 것
+  - XR Interaction Toolkit 샘플 모델(Assets/Samples): 툴킷 예제에 딸려 온 기본 도형·컨트롤러 모델
+  - XREAL SDK 안의 모델(로고 메시 등)
+  - 이 프로젝트와 관련 없는 다른 blend 파일 2개
+  - 코드로 만든 메시(.asset, 예: 집게·바닥 격자): 들여온 모델이 아니라 에디터 스크립트가 만든 것
+
+원본과 내용이 다른 프로젝트 파일 (11-17 해시 대조 — 원본을 받은 뒤 가공한 것)
+  - MeshyModel/MeshyModel.obj : 194 MB 원본 OBJ(Meshy_AI__0813030638 압축)를 Blender에서 가볍게 줄인 판(정점 9,751개, 08-27)
+  - Model1·Model2·StartUpPark·StartUpParkTrim 의 <이름>_BaseColorA.png, <이름>_MetallicSmoothness.png (8개)
+      : 프로젝트 들여오기 스크립트(Assets/Editor/SouvenirHuntModelImport.cs)가 원본 텍스처 두 장씩을 한 장으로 합친 것
+        (기본색+투명도, 금속감+매끄러움 — Unity 렌더링 방식에 맞춤). 원본 텍스처로 다시 만들 수 있다.
+  나머지 모델·텍스처는 모두 원본 압축 안의 파일과 똑같다. 원본을 못 찾은 모델은 없다.
