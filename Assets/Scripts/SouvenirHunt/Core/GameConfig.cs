@@ -62,6 +62,8 @@ namespace SouvenirHunt
         public float clawViewTiltFollowRate = 0.5f; // 0~5 lazy: 넘은 각도를 1초에 이 비율만큼 따라감(작을수록 느리고 눈에 덜 띔)
         // 11-26 안경 화면 연결 끊김 + 안경 벗은 지 이 초가 지나면 Beam Pro 화면 위쪽에 [강제 종료] 버튼(실행 앱으로 돌아감). 0 = 버튼 안 냄
         public float clawForceQuitSeconds = 10f;
+        // 11-26 인형뽑기 기계 효과음(집게 움직임·오르내림·잡기·배출구 통과 — ClawSfx) 크기 0~1. 0 = 이 효과음만 끔(audio=false면 전부 무음)
+        public float clawSfxVolume = 0.8f;
         public float clawBombForce = 1.6f;         // 0.5~4 폭발 옆 퍼짐 속도 m/s(중심 가까운 아이템 기준)
         public float clawBombLift = 0.65f;         // 0.1~0.9 폭발 튀는 높이 비율(바닥~캐리지 아래 대비)
         public bool clawStickRelative = false;     // false=패드 중심 기준 절대 / true=첫 터치점 기준 상대
