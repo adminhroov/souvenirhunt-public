@@ -67,7 +67,12 @@ namespace SouvenirHunt
         }
 
         // ── 오버레이(프리팹) 쪽에서 호출 ──
-        public static void Register(ClawPadRegistrar r) { Registrar = r; if (PriorityNotice.Length > 0 || baseNotice.Length > 0) ApplyNotice(); } // 10-29 감사: 착용 안내도 복원
+        public static void Register(ClawPadRegistrar r)
+        {
+            Registrar = r;
+            if (PriorityNotice.Length > 0 || baseNotice.Length > 0) ApplyNotice(); // 10-29 감사: 착용 안내도 복원
+            if (ForceQuitLabel.Length > 0) r.SetForceQuit(ForceQuitLabel);         // 11-26
+        }
         public static void Unregister(ClawPadRegistrar r) { if (Registrar == r) Registrar = null; }
 
         public static void SetStick(Vector2 raw, bool touching)
@@ -127,6 +132,26 @@ namespace SouvenirHunt
         public static string PriorityNotice { get; private set; } = "";
         static string baseNotice = "";
         static void ApplyNotice() => Registrar?.SetNotice(PriorityNotice.Length > 0 ? PriorityNotice : baseNotice);
+
+        // ── 11-26 [강제 종료] 버튼(안경 화면 연결 끊김 + 벗은 지 일정 시간 — XrRecoveryWatch가 켜고 끈다). 패드 위(가로로 잡았을 때 화면 위쪽 가운데) ──
+        /// <summary>지금 버튼에 쓸 글자(빈 문자열 = 숨김). 오버레이가 늦게 등록돼도 Register에서 다시 입힌다</summary>
+        public static string ForceQuitLabel { get; private set; } = "";
+        static bool forceQuitLatch;
+        public static void SetForceQuit(string label)
+        {
+            label ??= "";
+            if (label == ForceQuitLabel) return;
+            ForceQuitLabel = label;
+            if (label.Length == 0) forceQuitLatch = false;
+            Registrar?.SetForceQuit(label);
+        }
+        public static void PressForceQuit() { if (ForceQuitLabel.Length > 0) forceQuitLatch = true; }
+        public static bool TryConsumeForceQuit()
+        {
+            if (!forceQuitLatch) return false;
+            forceQuitLatch = false;
+            return true;
+        }
 
         /// <summary>
         /// 10-26 앱이 백그라운드에서 돌아옴(ClawPadRegistrar) — 멈출 때 Clear가 GrabEnabled를 켜고 누름을 지운 뒤 아무도 다시 입히지 않아

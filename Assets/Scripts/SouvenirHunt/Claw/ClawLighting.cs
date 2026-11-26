@@ -41,6 +41,49 @@ namespace SouvenirHunt
             baseReflMode = RenderSettings.defaultReflectionMode;
             baseRefl = RenderSettings.customReflectionTexture;
             baseReflIntensity = RenderSettings.reflectionIntensity;
+            baseMean = MeanIrradiance(baseProbe);
+            AdoptFirstLoadBase();
+        }
+
+        // 11-26 [다시 시작]으로 이 씬을 같은 프로세스에서 두 번째 불러오면 부스·기계·상품이 전부 검게(OST에선 안 보임) 나오던 문제(안경 캡처로 확인:
+        // 조명 없는 네온·바닥 격자·글씨만 보임). 주변광 밝기 배율 k는 씬 시작 때 읽은 RenderSettings.ambientProbe 평균에서 나오는데, 다시 불러온 씬에서는
+        // 그 값이 첫 로드와 다를 수 있다 → 프로세스 첫 로드의 기준(studio) 값을 기억해 두고, 이후 로드에서 읽은 값이 이상하거나 다르면 첫 로드 값을 쓴다.
+        static bool firstValid;
+        static AmbientMode firstMode;
+        static SphericalHarmonicsL2 firstProbe;
+        static float firstMean;
+        float baseMean;
+
+        static float Lum(Color c) { c = QualitySettings.activeColorSpace == ColorSpace.Linear ? c.linear : c; return c.r * 0.2126f + c.g * 0.7152f + c.b * 0.0722f; }
+
+        /// <summary>
+        /// 트라이라이트 색(씬 설정)에서 계산한 주변광 평균 — MeanIrradiance와 같은 14방향 가중(위 1·아래 1·수평 4·대각 8).
+        /// 11-26 기기에서 씬 시작 때 읽는 RenderSettings.ambientProbe는 0·NaN·2.66으로 로드마다 달라 기준으로 못 쓴다(로그) → 밝기 기준은 항상 이 값.
+        /// 색은 선형 공간으로 바꿔 계산(프로젝트가 Linear — 색 값 그대로 평균하면 2배 넘게 밝다)
+        /// </summary>
+        static float TrilightMean()
+        {
+            const float d = 0.57735f; // 대각 방향의 y
+            float sky = Lum(RenderSettings.ambientSkyColor), eq = Lum(RenderSettings.ambientEquatorColor), gr = Lum(RenderSettings.ambientGroundColor);
+            return (sky * (1f + 4f * d) + gr * (1f + 4f * d) + eq * (4f + 8f * (1f - d))) / 14f;
+        }
+
+        static bool SaneBase(float mean) => !float.IsNaN(mean) && !float.IsInfinity(mean) && mean > 0.03f && mean < 1.5f;
+
+        void AdoptFirstLoadBase()
+        {
+            float read = baseMean;
+            if (!firstValid)
+            {
+                float tri = TrilightMean();
+                firstMean = SaneBase(tri) ? tri : 0.2f;
+                firstMode = baseMode;
+                firstProbe = baseProbe;
+                firstValid = true;
+                Debug.Log($"[Lighting] 기준 주변광(첫 로드) 색에서 계산 {tri:F3} → 사용 {firstMean:F3} · 읽은 값 {read:F3} mode {baseMode}");
+            }
+            else Debug.Log($"[Lighting] 기준 주변광(다시 로드) 사용 {firstMean:F3}(첫 로드 값) · 읽은 값 {read:F3} mode {baseMode}");
+            baseMean = firstMean;
         }
 
         static readonly Vector3[] SampleDirs =
@@ -101,9 +144,11 @@ namespace SouvenirHunt
                     if (sun != null) { sun.transform.rotation = Quaternion.Euler(p.sunEuler); sun.color = p.sunColor; sun.intensity = p.sunIntensity; }
                     // 밝기는 씬의 지금 주변광(studio, Unity가 트라이라이트에서 만든 값)과 같은 평균으로 — 모양(색·방향 차이)만 묶음에서
                     var sh = p.AmbientProbe;
-                    float k = MeanIrradiance(baseProbe) / Mathf.Max(1e-4f, MeanIrradiance(sh));
+                    float k = baseMean / Mathf.Max(1e-4f, MeanIrradiance(sh));
+                    if (float.IsNaN(k) || float.IsInfinity(k) || k <= 0f) { Debug.LogWarning($"[Lighting] 주변광 배율 {k} 이상 → 1"); k = 1f; }
                     RenderSettings.ambientMode = AmbientMode.Custom;
                     RenderSettings.ambientProbe = sh * (k * Mathf.Max(0f, p.ambientScale));
+                    Debug.Log($"[Lighting] 주변광 배율 {k:F3} → 적용 평균 {MeanIrradiance(RenderSettings.ambientProbe):F3} (해 켜짐 {(sun != null && sun.isActiveAndEnabled)})");
                     if (p.reflection != null)
                     {
                         RenderSettings.defaultReflectionMode = DefaultReflectionMode.Custom;

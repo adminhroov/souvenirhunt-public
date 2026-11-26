@@ -35,6 +35,9 @@ namespace SouvenirHunt
         /// <summary>연결된 안경이 착용 감지를 지원한다고 SDK가 답함(로그·운영자 패널용 — 동작은 이벤트로만)</summary>
         public static bool Supported { get; private set; }
         public static event Action<WearState> Changed;
+        /// <summary>11-26 벗은 지 몇 초(실제 시계) — 벗은 상태가 아니거나 감지를 끄면 -1([강제 종료] 버튼 조건 — XrRecoveryWatch)</summary>
+        public static float OffSeconds =>
+            Instance != null && Enabled && State == WearState.Off ? (float)(DateTime.UtcNow - Instance.offSinceUtc).TotalSeconds : -1f;
 
         /// <summary>벗은 뒤 처음으로까지 남은 초(카운트다운 중이 아니면 -1)</summary>
         public float Remaining { get; private set; } = -1f;
@@ -83,8 +86,11 @@ namespace SouvenirHunt
         }
 
 #if UNITY_ANDROID && !UNITY_EDITOR
-        void OnSdkWearing(XREALWearingStatus s) =>
+        void OnSdkWearing(XREALWearingStatus s)
+        {
+            inferredOn = false; // 센서가 직접 알려 줌 — 추정 상태 끝
             Apply(s == XREALWearingStatus.PUT_ON ? WearState.On : s == XREALWearingStatus.TAKE_OFF ? WearState.Off : WearState.Unknown, "안경 센서");
+        }
 #endif
 
         void Apply(WearState next, string source)
@@ -151,7 +157,9 @@ namespace SouvenirHunt
                 Enabled = cfg.clawWearDetect;
                 resetSeconds = cfg.clawWearResetSeconds;
                 resumeSeconds = cfg.clawResumeResetSeconds;
+                inferEnabled = cfg.clawWearInfer;
             }
+            TickInfer(s);
             if (!Enabled || State != WearState.Off) { Remaining = -1f; Show(""); return; }
             if (ClawSceneRouter.Loading) { Remaining = -1f; return; } // 씬을 바꾸는 중(처음으로·게임으로) — 도착한 화면에서 다시 판단(겹친 리셋 방지)
 
@@ -172,6 +180,78 @@ namespace SouvenirHunt
             if (Remaining <= 0f) { DoReset($"안경 벗고 {resetSeconds:0}초"); return; }
             Show(Loc.T($"안경을 벗었어요\n<size=260%>{Mathf.CeilToInt(Remaining)}</size>\n<size=70%>초 뒤 처음 화면으로 돌아갑니다\n다시 쓰면 이어서 해요</size>",
                        $"Glasses off\n<size=260%>{Mathf.CeilToInt(Remaining)}</size>\n<size=70%>seconds until back to the start\nPut them back on to continue</size>"));
+        }
+
+        // ── 11-26 착용 추정 — 안경 센서가 '벗음'만 보내고 다시 썼을 때 '착용'을 안 보내는 일이 있다(로그: 벗음 뒤 30초 동안 게임을 하고 있는데도 착용 신호 없음
+        //    → 쓰고 있는데 처음으로 돌아감). 센서가 벗음인 동안 ① 머리가 계속 움직이거나 ② Beam Pro 패드를 조작하면 쓴 것으로 본다.
+        //    추정으로 켠 뒤 머리가 8초 동안 전혀 안 움직이면(책상 위) 다시 벗음으로 — 손에 들고 있다 내려놓은 경우를 바로잡는다. 처음 단계([시연 시작] 대기)에서는 추정하지 않는다
+        const float InferSample = 0.25f, InferMoveDeg = 0.1f, InferOffGrace = 2f, InferStillSeconds = 8f, InferNeedPathDeg = 3f;
+        const int InferWindow = 8, InferNeedMoving = 6;
+        bool inferEnabled = true, inferredOn, haveRot;
+        Transform headT;
+        Quaternion lastRot;
+        float nextInferSample, stillSince;
+        readonly float[] moveSamples = new float[InferWindow];
+        int moveIdx, moveCount;
+
+        /// <summary>작은 각도도 정확히(Quaternion.Angle은 0.16° 아래를 0으로 돌려준다)</summary>
+        static float SmallAngleDeg(Quaternion a, Quaternion b)
+        {
+            Quaternion d = Quaternion.Inverse(a) * b;
+            float v = Mathf.Sqrt(d.x * d.x + d.y * d.y + d.z * d.z);
+            return 2f * Mathf.Asin(Mathf.Clamp01(v)) * Mathf.Rad2Deg;
+        }
+
+        void ResetInferWindow() { moveIdx = 0; moveCount = 0; haveRot = false; stillSince = Time.unscaledTime; }
+
+        void TickInfer(IGameSession s)
+        {
+            if (Application.isEditor || !Enabled || !inferEnabled) { inferredOn = false; return; }
+            bool off = State == WearState.Off;
+            if (!off && !inferredOn) { haveRot = false; return; }
+            if (off && (AtStart(s) || ClawSceneRouter.Loading)) { ResetInferWindow(); return; }
+            float now = Time.unscaledTime;
+
+            // ② 패드 조작 — 누군가 게임을 하고 있다
+            if (off && (ClawPadInput.IsTouching || ClawPadInput.GrabHeld)) { InferOn("패드 조작"); return; }
+
+            if (now < nextInferSample) return;
+            nextInferSample = now + InferSample;
+            if (headT == null) { var cam = Camera.main; headT = cam != null ? cam.transform : null; haveRot = false; }
+            if (headT == null) return;
+            Quaternion r = headT.localRotation;
+            if (float.IsNaN(r.x) || float.IsNaN(r.y) || float.IsNaN(r.z) || float.IsNaN(r.w)) { haveRot = false; return; }
+            if (!haveRot) { lastRot = r; haveRot = true; if (off) { moveIdx = 0; moveCount = 0; } else stillSince = now; return; }
+            float deg = SmallAngleDeg(lastRot, r);
+            lastRot = r;
+
+            if (off)
+            {
+                if ((float)(DateTime.UtcNow - offSinceUtc).TotalSeconds < InferOffGrace) { moveIdx = 0; moveCount = 0; return; } // 벗는 동작 자체는 세지 않음
+                moveSamples[moveIdx] = deg;
+                moveIdx = (moveIdx + 1) % InferWindow;
+                if (moveCount < InferWindow) moveCount++;
+                if (moveCount < InferWindow) return;
+                int moving = 0; float path = 0f;
+                foreach (float m in moveSamples) { path += m; if (m > InferMoveDeg) moving++; }
+                if (moving >= InferNeedMoving && path >= InferNeedPathDeg) InferOn($"머리 움직임 {path:0.0}°/2초");
+                return;
+            }
+            // 추정으로 켠 상태 — 머리가 계속 멈춰 있으면 벗은 것으로 되돌린다
+            if (deg > InferMoveDeg) { stillSince = now; return; }
+            if (now - stillSince < InferStillSeconds) return;
+            inferredOn = false;
+            Apply(WearState.Off, $"추정 취소 — 머리 {InferStillSeconds:0}초 정지");
+            offSinceUtc = DateTime.UtcNow.AddSeconds(-InferStillSeconds);
+            ResetInferWindow();
+        }
+
+        void InferOn(string why)
+        {
+            inferredOn = true;
+            stillSince = Time.unscaledTime;
+            haveRot = false;
+            Apply(WearState.On, "추정: " + why);
         }
 
         void DoReset(string why)

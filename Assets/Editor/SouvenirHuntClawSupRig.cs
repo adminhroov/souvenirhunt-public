@@ -91,7 +91,7 @@ public static partial class SouvenirHuntSetup
         var skinM = bones.Select((b, j) => b.localToWorldMatrix * bind[j]).ToArray(); // 휴식(바인드) 자세 → 세트 공간(인스턴스 원점)
         var v0 = src.vertices;
         var n0 = src.normals;
-        var p = new SupPart { v = new Vector3[v0.Length], n = new Vector3[v0.Length], uv = src.uv, tris = src.triangles, mat = smr.sharedMaterial };
+        var p = new SupPart { v = new Vector3[v0.Length], n = new Vector3[v0.Length], uv = src.uv, tris = src.triangles, mat = SupSkin(smr.sharedMaterial) };
         for (int i = 0; i < v0.Length; i++)
         {
             p.v[i] = SupSkin(skinM, bw[i], v0[i], true);

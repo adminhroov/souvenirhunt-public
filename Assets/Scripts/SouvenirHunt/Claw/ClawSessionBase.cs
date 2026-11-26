@@ -551,6 +551,7 @@ namespace SouvenirHunt
             approachSeconds = cfg.clawApproachSeconds;
             approachPower = cfg.clawApproachPower;
             viewTiltDeg = cfg.clawViewTiltDeg;            // 11-10 시점 기울기
+            if (booth != null) booth.SetViewTiltFollow(cfg.clawViewTiltFollow, cfg.clawViewTiltDeadDeg, cfg.clawViewTiltFollowRate); // 11-26 축 따라가기
 
             ApplyGameConfig(cfg);
 

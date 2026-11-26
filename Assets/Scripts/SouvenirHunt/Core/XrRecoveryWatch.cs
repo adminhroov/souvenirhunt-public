@@ -288,6 +288,74 @@ namespace SouvenirHunt
             }
         }
 
+        // ─ 11-26 [강제 종료] 버튼(사용자: "lost 판정이 떴을 때 안경 벗고 일정 시간이 지나면 빔프로 화면 상단에 강제종료 버튼 → 실행 앱으로 돌아가 다시 시작") ─
+        // 조건: 링크 끊김(linkLost) + 벗은 지 config clawForceQuitSeconds(기본 10, 0 = 끔)초. 한 번 뜨면 링크 끊김 안내가 내려갈 때까지 유지(다시 써도 화면이 안 돌아오는 경우).
+        // 누르면 실행 앱(언어 선택)을 띄우고 이 게임 프로세스를 끝낸다 — 경품 요청 중에는 받지 않음(응답 처리가 끊기지 않게)
+        bool forceQuitShown, forceQuitting;
+
+        void TickForceQuit()
+        {
+            float need = GameSession.Current?.Config?.clawForceQuitSeconds ?? 10f;
+            var session = ClawSessionBase.Instance;
+            bool sending = session != null && session.PrizeSending;
+            if (!forceQuitShown)
+            {
+                float off = ClawWearWatch.OffSeconds;
+                if (need > 0f && linkLost && off >= need)
+                {
+                    forceQuitShown = true;
+                    Debug.Log($"[XRHealth] force-quit button shown (link lost, glasses off {off:0}s ≥ {need:0}s)");
+                }
+            }
+            else if (!linkLost || need <= 0f)
+            {
+                forceQuitShown = false;
+                Debug.Log("[XRHealth] force-quit button hidden (link restored)");
+            }
+            ClawPadInput.SetForceQuit(!forceQuitShown ? ""
+                : sending ? Loc.T("경품 요청 중…", "Requesting prize…")
+                : Loc.T("강제 종료 · 다시 시작", "Force quit · Restart"));
+            if (!ClawPadInput.TryConsumeForceQuit() || !forceQuitShown || forceQuitting) return;
+            if (sending) { Debug.Log("[XRHealth] force-quit ignored — prize request in flight"); return; }
+            forceQuitting = true;
+            bool launched = LaunchLauncher();
+            Debug.Log($"[Cycle] FORCE QUIT — Beam Pro [강제 종료] (링크 끊김, 상태 {GameSession.Current?.StateName ?? "?"}) → 실행 앱 {(launched ? "띄움" : "못 띄움")}, 게임 종료");
+            try { ClawSessionBase.QuitLikeSdk(); }
+            catch (Exception e) { Debug.LogException(e); Application.Quit(); }
+        }
+
+        /// <summary>
+        /// 실행 앱(게임 패키지에 ".launcher"를 끼운 패키지: com.hroov.souvenirhunt[.b] → com.hroov.souvenirhunt.launcher[.b], 클래스 이름은 A·B 같음)을 새 태스크로.
+        /// 없거나 실패하면 이 APK 안의 시작 화면(BeamEntryActivity — [처음부터 다시 실행])이라도 띄운다
+        /// </summary>
+        static bool LaunchLauncher()
+        {
+            const string basePkg = "com.hroov.souvenirhunt";
+            try
+            {
+                using var player = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
+                using var activity = player.GetStatic<AndroidJavaObject>("currentActivity");
+                string pkg = activity.Call<string>("getPackageName");
+                string launcherPkg = pkg.StartsWith(basePkg, StringComparison.Ordinal) ? basePkg + ".launcher" + pkg.Substring(basePkg.Length) : pkg + ".launcher";
+                const int newTaskClearTop = 0x10000000 | 0x04000000; // FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_CLEAR_TOP
+                try
+                {
+                    using var intent = new AndroidJavaObject("android.content.Intent");
+                    using (intent.Call<AndroidJavaObject>("setClassName", launcherPkg, basePkg + ".launcher.LauncherActivity")) { }
+                    using (intent.Call<AndroidJavaObject>("addFlags", newTaskClearTop)) { }
+                    activity.Call("startActivity", intent);
+                    return true;
+                }
+                catch (Exception e) { Debug.LogWarning("[XRHealth] launcher start failed (" + launcherPkg + "): " + e.Message + " — phone entry instead"); }
+                using var entry = new AndroidJavaObject("android.content.Intent");
+                using (entry.Call<AndroidJavaObject>("setClassName", pkg, basePkg + ".bridge.BeamEntryActivity")) { }
+                using (entry.Call<AndroidJavaObject>("addFlags", newTaskClearTop)) { }
+                activity.Call("startActivity", entry);
+                return true;
+            }
+            catch (Exception e) { Debug.LogWarning("[XRHealth] force-quit could not open the launcher: " + e.Message); return false; }
+        }
+
         void SceneLoaded(Scene scene, LoadSceneMode mode) => QueueAlignment("scene " + scene.name);
         void WearChanged(ClawWearWatch.WearState state)
         {
@@ -325,6 +393,7 @@ namespace SouvenirHunt
             }
             if (Time.unscaledTime >= nextSample) { nextSample = Time.unscaledTime + 1f; Publish(); }
             TickLinkWatch();
+            TickForceQuit();
             if (alignAt < 0f || Time.unscaledTime < alignAt) return;
             if (Time.unscaledTime > alignDeadline) { alignAt = -1f; return; }
             if (ClawSceneRouter.Loading || ClawWearWatch.State == ClawWearWatch.WearState.Off) return;

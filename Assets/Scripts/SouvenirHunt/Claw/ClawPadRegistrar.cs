@@ -66,5 +66,72 @@ namespace SouvenirHunt
             if (show && noticeText != null && noticeText.text != text) noticeText.text = text;
             if (notice.activeSelf != show) notice.SetActive(show);
         }
+
+        // ─ 11-26 [강제 종료] 버튼 — 프리팹을 다시 만들지 않게 처음 필요할 때 코드로 만든다(안내 위·패드 위 맨 앞 형제 = 터치 우선) ─
+        GameObject forceQuit;
+        TMP_Text forceQuitText;
+
+        /// <summary>빈 문자열이면 숨김. 자리는 Beam Pro를 가로로 잡았을 때 화면 위쪽 가운데(왼쪽 90° 눕힘 = 세로 화면 오른쪽 변)</summary>
+        public void SetForceQuit(string label)
+        {
+            bool show = !string.IsNullOrEmpty(label);
+            if (show && forceQuit == null) BuildForceQuit();
+            if (forceQuit == null) return;
+            if (show)
+            {
+                PlaceForceQuit();
+                forceQuit.transform.SetAsLastSibling();
+                if (forceQuitText != null && forceQuitText.text != label) forceQuitText.text = label;
+            }
+            if (forceQuit.activeSelf != show) forceQuit.SetActive(show);
+        }
+
+        void BuildForceQuit()
+        {
+            var parent = notice != null ? notice.transform.parent : transform.parent;
+            if (parent == null) return;
+            forceQuit = new GameObject("ForceQuitButton", typeof(RectTransform), typeof(UnityEngine.UI.Image), typeof(UnityEngine.UI.Button));
+            forceQuit.layer = 5;
+            forceQuit.transform.SetParent(parent, false);
+            var img = forceQuit.GetComponent<UnityEngine.UI.Image>();
+            img.color = new Color(0.78f, 0.13f, 0.15f, 0.97f);
+            img.raycastTarget = true;
+            forceQuit.GetComponent<UnityEngine.UI.Button>().onClick.AddListener(ClawPadInput.PressForceQuit);
+            if (noticeText != null) forceQuitText = Instantiate(noticeText, forceQuit.transform);
+            else forceQuitText = new GameObject("Text", typeof(RectTransform)).AddComponent<TextMeshProUGUI>();
+            forceQuitText.transform.SetParent(forceQuit.transform, false);
+            forceQuitText.gameObject.name = "Text";
+            forceQuitText.gameObject.layer = 5;
+            forceQuitText.gameObject.SetActive(true);
+            forceQuitText.raycastTarget = false;
+            forceQuitText.color = Color.white;
+            forceQuitText.alignment = TextAlignmentOptions.Center;
+            forceQuitText.enableAutoSizing = true;
+            forceQuitText.fontSizeMin = 24f;
+            forceQuitText.fontSizeMax = 60f;
+            forceQuitText.text = "";
+            forceQuit.SetActive(false);
+        }
+
+        void PlaceForceQuit()
+        {
+            var rt = (RectTransform)forceQuit.transform;
+            float z;
+            switch (ClawPadInput.Rotation)
+            {
+                case ClawPadInput.PadRotation.Right90: rt.anchorMin = new Vector2(0.015f, 0.30f); rt.anchorMax = new Vector2(0.17f, 0.70f); z = 90f; break;
+                case ClawPadInput.PadRotation.None: rt.anchorMin = new Vector2(0.20f, 0.90f); rt.anchorMax = new Vector2(0.80f, 0.985f); z = 0f; break;
+                default: rt.anchorMin = new Vector2(0.83f, 0.30f); rt.anchorMax = new Vector2(0.985f, 0.70f); z = -90f; break;
+            }
+            rt.offsetMin = rt.offsetMax = Vector2.zero;
+            if (forceQuitText == null) return;
+            Canvas.ForceUpdateCanvases();
+            var size = rt.rect.size;
+            var trt = forceQuitText.rectTransform;
+            trt.anchorMin = trt.anchorMax = trt.pivot = new Vector2(0.5f, 0.5f);
+            trt.anchoredPosition = Vector2.zero;
+            trt.localRotation = Quaternion.Euler(0f, 0f, z);
+            trt.sizeDelta = (Mathf.Approximately(z, 0f) ? size : new Vector2(size.y, size.x)) - new Vector2(24f, 16f);
+        }
     }
 }
