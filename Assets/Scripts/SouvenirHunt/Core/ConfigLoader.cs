@@ -141,6 +141,15 @@ clawRewardTextEn=Gwanghwamun Rubik's Cube Keyring
 clawLanguage=ko
 # 시점 기울기(11-10, ClawGame과 같은 시점): 기계가 드러날 때부터 화면을 이 각도(0~30°, 0 = 끔)만큼 아래로 숙임. 빌드 불필요
 clawViewTiltDeg=13.2
+# 기울기 축이 고개 좌우 회전을 따라가는 방식(11-26): fixed(기본 — 정면 기준 고정: 고개를 돌려도 화면이 좌우로만 돎, 옆을 보면 수평이 기욺) | lazy(아래 각도 안에서만 고정, 넘으면 천천히 따라감) | frame(매 프레임 — 수평 유지, 돌릴 때 롤이 섞여 보임)
+#   lazy 전용: clawViewTiltDeadDeg(0~60) 이 각도 안에서는 축을 안 움직임 · clawViewTiltFollowRate(0~5) 넘은 각도를 1초에 이 비율만큼 따라감
+clawViewTiltFollow=fixed
+clawViewTiltDeadDeg=10
+clawViewTiltFollowRate=0.5
+# 안경 화면 연결 끊김 + 안경 벗은 지 이 초가 지나면 Beam Pro 화면 위쪽에 [강제 종료] 버튼(누르면 실행 앱으로). 0 = 버튼 안 냄(11-26)
+clawForceQuitSeconds=10
+# 안경 화면 링크 끊김 감시(11-26 B와 같게): 이 앱 로그에 이 글자가 5초에 3줄 이상이면 Beam Pro에 [처음부터 다시 실행] 안내(자동 재시작 없음). 비우면 끔. 빌드 불필요
+clawLinkLossSignature=get rsp error
 # 기계 안 개수(10-28 기본 = 받침 더미 없이 바닥에 상품 20개: 큐브 10·세라믹 5·유리 5): 세라믹 그릇 0~20 · 유리 그릇 0~20 · 키링 큐브 0~20 · 캡슐 0~50 · 폭탄 0~8 (합계는 배치 상한 안으로 자동 조정)
 # 상품(큐브·그릇)은 집게가 닿는 안전 구역(벽 쪽 끝·배출구 옆 제외)에 놓이고 다시 놓인다
 clawCeramicCount=5
@@ -200,6 +209,8 @@ vipGazeAngleDeg=6
 #   clawWearResetSeconds(0~600, 0 = 안 감)초 안에 다시 안 쓰면 처음 화면(홍채 인증)으로. 결과 화면에서 [보상 확인] 전이면 처음으로 가지 않음.
 #   앱이 백그라운드에 clawResumeResetSeconds(0~600, 0 = 끔)초 이상 있다 돌아오면(다시 실행) 처음으로. clawWearDetect=false면 착용 무시
 clawWearDetect=true
+# 11-26 안경 센서가 다시 쓴 것을 알려 주지 않을 때: 벗음 상태에서 머리가 계속 움직이거나 패드를 조작하면 쓴 것으로 본다(false = 센서만 믿음)
+clawWearInfer=true
 clawWearResetSeconds=30
 clawResumeResetSeconds=3
 
@@ -375,6 +386,17 @@ prizeTimeoutSeconds=8
                         }
                         break;
                     case "clawViewTiltDeg": cfg.clawViewTiltDeg = ParseClampFloat(cfg, key, value, cfg.clawViewTiltDeg, 0f, 30f, i); break; // 11-10 시점 기울기
+                    case "clawViewTiltFollow": // 11-26
+                        {
+                            string v = value.Trim().ToLowerInvariant();
+                            if (v == "lazy" || v == "frame" || v == "fixed") cfg.clawViewTiltFollow = v;
+                            else cfg.warnings.Add($"{i + 1}행 clawViewTiltFollow '{value}' → lazy·frame·fixed 아님, {cfg.clawViewTiltFollow} 유지");
+                        }
+                        break;
+                    case "clawViewTiltDeadDeg": cfg.clawViewTiltDeadDeg = ParseClampFloat(cfg, key, value, cfg.clawViewTiltDeadDeg, 0f, 60f, i); break;
+                    case "clawViewTiltFollowRate": cfg.clawViewTiltFollowRate = ParseClampFloat(cfg, key, value, cfg.clawViewTiltFollowRate, 0f, 5f, i); break;
+                    case "clawForceQuitSeconds": cfg.clawForceQuitSeconds = ParseClampFloat(cfg, key, value, cfg.clawForceQuitSeconds, 0f, 600f, i); break;
+                    case "clawLinkLossSignature": cfg.clawLinkLossSignature = value.Trim(); break; // 11-26 비우면 감시 끔
                     case "clawBombForce":
                         cfg.clawBombForce = ParseClampFloat(cfg, key, value, cfg.clawBombForce, 0.5f, 4f, i);
                         break;
@@ -449,6 +471,7 @@ prizeTimeoutSeconds=8
                     case "vipPoseHoldSeconds": cfg.vipPoseHoldSeconds = ParseClampFloat(cfg, key, value, cfg.vipPoseHoldSeconds, 0.2f, 3f, i); break;
                     case "vipGazeSeconds": cfg.vipGazeSeconds = ParseClampFloat(cfg, key, value, cfg.vipGazeSeconds, 0.5f, 5f, i); break;
                     case "vipGazeAngleDeg": cfg.vipGazeAngleDeg = ParseClampFloat(cfg, key, value, cfg.vipGazeAngleDeg, 2f, 15f, i); break;
+                    case "clawWearInfer": cfg.clawWearInfer = ParseBool(cfg, key, value, cfg.clawWearInfer, i); break;
                     case "clawWearDetect": cfg.clawWearDetect = ParseBool(cfg, key, value, cfg.clawWearDetect, i); break;
                     case "clawWearResetSeconds": cfg.clawWearResetSeconds = ParseClampFloat(cfg, key, value, cfg.clawWearResetSeconds, 0f, 600f, i); break;
                     case "clawResumeResetSeconds": cfg.clawResumeResetSeconds = ParseClampFloat(cfg, key, value, cfg.clawResumeResetSeconds, 0f, 600f, i); break;

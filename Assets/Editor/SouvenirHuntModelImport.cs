@@ -197,7 +197,7 @@ public static partial class SouvenirHuntSetup
 
     /// <summary>
     /// 텍스처 세트가 여러 벌인 모델(10-19 StartUpPark: 본체 아틀라스 + Trim). 규칙: Assets/Models/&lt;Name&gt;/&lt;Name&gt;.fbx + Texture/&lt;세트&gt;/*.png.
-    /// 세트 안 파일 이름은 키워드로 찾는다(BaseColor|base_Color, Metallic|Metalness, Roughness, Normal(OpenGL 우선·DirectX 제외), Emissive, Opacity|opecity).
+    /// 세트 안 파일 이름은 키워드로 찾는다(BaseColor|base_Color|Diffuse, Metallic|Metalness, Roughness, Normal(OpenGL 우선·DirectX 제외), Emissive, Opacity|opecity).
     /// FBX 내장 재질 → 세트: Unity가 이름으로 찾아 붙인 내장 재질의 기본색 텍스처 폴더(없으면 재질 순서 = 세트 이름 순서).
     /// 세트마다 BaseColorA·MetallicSmoothness를 그 세트 폴더에 만들고 &lt;Name&gt;_&lt;세트&gt;_Mat(+_Cutout·_Glass) 재질 → 렌더러는 서브메시별 내장 재질의 세트로 배정.
     /// </summary>
@@ -247,7 +247,7 @@ public static partial class SouvenirHuntSetup
             {
                 string set = Path.GetFileName(setDir);
                 string Find(params string[] keys) => FindTextureByKey(setDir, keys);
-                string basePath = Find("BaseColor", "base_Color");
+                string basePath = Find("BaseColor", "base_Color", "Diffuse"); // 11-23 ETRI: *_Diffuse
                 if (basePath == null) { report.AppendLine($"  {name}/{set}: 기본색 텍스처 없음 — 건너뜀"); continue; }
                 string normalPath = FindNormalTexture(setDir);
                 if (normalPath != null) ConfigureTexture(normalPath, ti => { ti.textureType = TextureImporterType.NormalMap; });

@@ -22,11 +22,23 @@ public static partial class SouvenirHuntSetup
     const float StartUpParkYaw = 180f;
     const float StartUpParkScale = 1f;
 
+    // 11-23 행사 부스 = ETRI(NAB Show 라스베이거스 ETRI 부스: 전시 홀 벽·NAB SHOW/ETRI 배너·육각 배너·조명·천장 트러스·양옆 안내 부스·카펫·울타리).
+    // 사용자 "인형뽑기는 말고 나머지 배경은 지금 것을 대체" — 기계는 지금 StartUpPark 게임 기계 그대로, 배경만 교체.
+    // ETRI 소품(ETRI_Props_Gatcha·Rail·Floor)은 StartUpPark 기계·울타리·카펫과 같은 메시·같은 자리(같은 키트) → 겉모양 기계만 지우고 StartUpPark와 같은 방식으로 배치.
+    // 원본: Downloads ETRI.zip → Assets/Models/ETRI(ETRI.fbx + Texture/<세트>/*_Diffuse 등), 메뉴 33이 재질·프리팹. 프리팹이 없으면 StartUpPark 부스로 대체.
+    const string EtriPrefabPath = "Assets/Models/ETRI/ETRI.prefab";
+    const string EtriMachinePart = "ETRI_Props_Gatcha";
+    const string EtriMachinePrefix = "ETRI_Props_Gatcha";
+
     /// <summary>부스 배치. 모델이 없으면 경고만(부스 없이도 게임은 완전) — null 반환.</summary>
     static GameObject BuildClawBooth(Transform boothRoot, int layer, ClawModelParts machineParts, StringBuilder report)
     {
+        var etri = AssetDatabase.LoadAssetAtPath<GameObject>(EtriPrefabPath);
+        if (etri != null) return BuildStartUpParkBooth(boothRoot, layer, machineParts, etri, report, "ETRI", EtriMachinePart, EtriMachinePrefix);
+        report.AppendLine($"  ⚠ {EtriPrefabPath} 없음(메뉴 33 필요) — StartUpPark 부스로 대체");
+
         var sup = AssetDatabase.LoadAssetAtPath<GameObject>(StartUpParkPrefabPath);
-        if (sup != null) return BuildStartUpParkBooth(boothRoot, layer, machineParts, sup, report);
+        if (sup != null) return BuildStartUpParkBooth(boothRoot, layer, machineParts, sup, report, "StartUpPark", StartUpParkMachinePart, StartUpParkMachinePrefix);
         report.AppendLine($"  ⚠ {StartUpParkPrefabPath} 없음(메뉴 33 필요) — Model1 부스로 대체");
 
         var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(Model1PrefabPath);
@@ -79,13 +91,15 @@ public static partial class SouvenirHuntSetup
         return root;
     }
 
-    static GameObject BuildStartUpParkBooth(Transform boothRoot, int layer, ClawModelParts machineParts, GameObject prefab, StringBuilder report)
+    /// <summary>가운데에 겉모양 인형뽑기 기계가 있는 행사 부스(StartUpPark·ETRI): 그 기계를 지우고 그 자리에 게임 기계가 오게 배치</summary>
+    static GameObject BuildStartUpParkBooth(Transform boothRoot, int layer, ClawModelParts machineParts, GameObject prefab, StringBuilder report,
+                                            string label, string machinePart, string machinePrefix)
     {
         float bs = StartUpParkScale;
         var rot = Quaternion.Euler(0f, StartUpParkYaw, 0f);
         var boothB = MeasureModelBounds(prefab);
-        var anchor = MeasurePartBounds(prefab, StartUpParkMachinePart);
-        if (anchor == null) report.AppendLine($"  ⚠ 부스 기계 '{StartUpParkMachinePart}' 없음 — 모델 원점·최저면 기준으로 배치");
+        var anchor = MeasurePartBounds(prefab, machinePart);
+        if (anchor == null) report.AppendLine($"  ⚠ 부스 기계 '{machinePart}' 없음 — 모델 원점·최저면 기준으로 배치");
         var a = anchor ?? new Bounds(new Vector3(0f, boothB.min.y, 0f), Vector3.zero);
 
         // 게임 기계 발자국 중심(BoothRoot 로컬) = 기계 원점 + yaw 회전 × (모델 바운즈 중심 × 배율)
@@ -101,7 +115,20 @@ public static partial class SouvenirHuntSetup
             origin = ClawLayout.MachineOriginLocal;
             rot = Quaternion.Euler(0f, ClawLayout.MachineYaw, 0f);
             bs = 1f;
-            machineCenter = ClawLayout.MachineOriginLocal + rot * new Vector3(a.center.x, 0f, a.center.z);
+            // 11-23 다른 부스(ETRI): 게임 기계 = StartUpPark 프리팹의 기계 → 이 부스의 겉모양 기계(발자국 중심 xz·밑면 y)가 StartUpPark 기계 자리에 오게 옮김(같은 키트라 보통 0)
+            if (prefab.name != "StartUpPark" && anchor != null)
+            {
+                var supPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(StartUpParkPrefabPath);
+                var supB = supPrefab != null ? MeasurePartBounds(supPrefab, StartUpParkMachinePart) : null;
+                if (supB != null)
+                {
+                    var d = new Vector3(supB.Value.center.x - a.center.x, supB.Value.min.y - a.min.y, supB.Value.center.z - a.center.z);
+                    origin += rot * d;
+                    report.AppendLine($"  · {label} 겉모양 기계 → StartUpPark 기계 자리 보정 (모델 로컬 {d.x:F3}, {d.y:F3}, {d.z:F3})");
+                    a = new Bounds(a.center + d, a.size);
+                }
+            }
+            machineCenter = origin + rot * new Vector3(a.center.x, 0f, a.center.z);
         }
 
         var root = new GameObject("Booth") { layer = layer };
@@ -116,7 +143,7 @@ public static partial class SouvenirHuntSetup
 
         // 겉모양뿐인 원본 기계(몸체·유리 상자·배출구 판) 제거 — 게임 기계가 그 자리에 선다
         var removed = model.GetComponentsInChildren<Transform>(true)
-            .Where(t => t != model.transform && t.name.StartsWith(StartUpParkMachinePrefix)).Select(t => t.gameObject).ToList();
+            .Where(t => t != model.transform && t.name.StartsWith(machinePrefix)).Select(t => t.gameObject).ToList();
         foreach (var go in removed) Object.DestroyImmediate(go);
 
         int renderers = 0;
@@ -129,7 +156,7 @@ public static partial class SouvenirHuntSetup
         }
 
         var size = boothB.size * bs;
-        report.AppendLine($"  · 부스 = StartUpPark (×{bs:F2} → {size.x:F2}×{size.y:F2}×{size.z:F2}m, yaw {StartUpParkYaw:F0}, 원점 {origin}) — " +
+        report.AppendLine($"  · 부스 = {label} (×{bs:F2} → {size.x:F2}×{size.y:F2}×{size.z:F2}m, yaw {StartUpParkYaw:F0}, 원점 {origin}) — " +
                           $"원본 인형뽑기 기계 {removed.Count}개 파트 제거, 그 자리(발자국 중심 {a.center.x:F2},{a.center.z:F2})에 게임 기계 중심 ({machineCenter.x:F2},{machineCenter.z:F2}), " +
                           $"기계 밑면 = 원본 기계 밑면(모델 y {a.min.y:F3}), 렌더러 {renderers}개, 기계와 함께 슬라이드 인");
         return root;

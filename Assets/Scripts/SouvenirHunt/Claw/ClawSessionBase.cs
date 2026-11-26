@@ -546,6 +546,7 @@ namespace SouvenirHunt
             approachSeconds = cfg.clawApproachSeconds;
             approachPower = cfg.clawApproachPower;
             viewTiltDeg = cfg.clawViewTiltDeg;            // 11-10 시점 기울기
+            if (booth != null) booth.SetViewTiltFollow(cfg.clawViewTiltFollow, cfg.clawViewTiltDeadDeg, cfg.clawViewTiltFollowRate); // 11-26 축 따라가기
 
             ApplyGameConfig(cfg);
 
@@ -617,7 +618,7 @@ namespace SouvenirHunt
             else Debug.Log("[Claw] 종료 다이얼로그 취소");
         }
 
-        static void QuitLikeSdk()
+        public static void QuitLikeSdk()
         {
 #if UNITY_EDITOR
             Debug.Log("[Claw] (에디터) 종료 → 재생 중지");

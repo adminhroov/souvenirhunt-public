@@ -55,6 +55,15 @@ namespace SouvenirHunt
         public bool clawLanguageSet;               // config에 clawLanguage 줄이 있었는가(Loc 로그 source=config|default 구분)
         // 11-10 시점 기울기(ClawGame과 같은 시점): 기계가 드러나기 직전(검정)부터 XR 리그를 눈을 축으로 이만큼 아래로 숙임 — 0~30°, 0 = 끔(BoothAligner)
         public float clawViewTiltDeg = 13.2f;
+        // 11-26 시점 기울기 축이 고개 좌우 회전을 따라가는 방식(BoothAligner): lazy(기본 — 고개를 돌리는 동안은 축 고정, 많이 돌린 채 있으면 천천히 따라감) |
+        // frame(11-10 방식: 매 프레임 고개 방향 축 — 좌우로 돌리면 화면이 롤과 같이 도는 느낌) | fixed(켤 때 방향에 고정 — 옆을 보면 수평이 기욺)
+        public string clawViewTiltFollow = "fixed"; // 11-26(2) 사용자 "내려다보는 시점에서 고개 돌리는 게 제대로" → 기본 fixed(정면 기준 고정 = 고개를 돌려도 화면은 좌우로만 돎)
+        // 11-26 B와 같은 안경 화면 링크 끊김 서명 감시(자기 프로세스 logcat에서 5초에 3줄 이상이면 Beam Pro 안내·[강제 종료] 조건). 비우면 감시 끔
+        public string clawLinkLossSignature = XrLinkLoss.DefaultSignature;
+        public float clawViewTiltDeadDeg = 10f;    // 0~60 lazy: 축과 고개 방향 차이가 이 각도 안이면 축을 움직이지 않음
+        public float clawViewTiltFollowRate = 0.5f; // 0~5 lazy: 넘은 각도를 1초에 이 비율만큼 따라감(작을수록 느리고 눈에 덜 띔)
+        // 11-26 안경 화면 연결 끊김 + 안경 벗은 지 이 초가 지나면 Beam Pro 화면 위쪽에 [강제 종료] 버튼(실행 앱으로 돌아감). 0 = 버튼 안 냄
+        public float clawForceQuitSeconds = 10f;
         public float clawBombForce = 1.6f;         // 0.5~4 폭발 옆 퍼짐 속도 m/s(중심 가까운 아이템 기준)
         public float clawBombLift = 0.65f;         // 0.1~0.9 폭발 튀는 높이 비율(바닥~캐리지 아래 대비)
         public bool clawStickRelative = false;     // false=패드 중심 기준 절대 / true=첫 터치점 기준 상대
@@ -100,7 +109,8 @@ namespace SouvenirHunt
         public float vipGazeSeconds = 2f;          // 0.5~5 정면 타깃 연속 응시 시간(벗어나면 처음부터)
         public float vipGazeAngleDeg = 6f;         // 2~15 타깃 중심에서 이 각도 안이면 '보는 중'(나갈 땐 +2° 여유)
         // ── 10-26 안경 착용 감지·자동 처음으로 — ClawWearWatch(사용자 "착용하고 있을 때만 안구 인식, 벗고 30초 지나면 처음 시작 단계로, 카운트는 빔프로 화면에") ──
-        public bool clawWearDetect = true;         // 안경 근접 센서(SDK 착용 이벤트): 벗은 동안 홍채 인증 멈춤 + 벗고 clawWearResetSeconds 지나면 처음으로. false = 착용 무시(예전)
+        public bool clawWearInfer = true;          // 11-26 센서가 '벗음'인데 머리가 계속 움직이거나 패드를 조작하면 쓴 것으로 봄(센서가 다시 쓴 것을 안 알려 줄 때). false = 센서만
+        public bool clawWearDetect = true;        // 안경 근접 센서(SDK 착용 이벤트): 벗은 동안 홍채 인증 멈춤 + 벗고 clawWearResetSeconds 지나면 처음으로. false = 착용 무시(예전)
         public float clawWearResetSeconds = 30f;   // 0~600 벗은 뒤 처음 화면(홍채 인증)으로 돌아가기까지 초 — Beam Pro 화면에 카운트다운. 0 = 처음으로 안 감
         public float clawResumeResetSeconds = 3f;  // 0~600 앱이 백그라운드에 이만큼 이상 있다 돌아오면(다시 실행) 처음으로. 0 = 끔
         // ── 경품 연동(10-06, 오스리움 이벤트 경품 연동 API v1.0) — PrizeLink가 소비 ──

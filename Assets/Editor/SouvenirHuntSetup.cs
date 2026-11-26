@@ -116,6 +116,56 @@ public static partial class SouvenirHuntSetup
     const string ApkPath = "Builds/SouvenirHunt.apk";
     const string PrevApkPath = "Builds/prev/SouvenirHunt.apk";
 
+    // 11-23 서명: 옛 PC의 debug.keystore가 포맷으로 사라져 새 PC 빌드는 기기 앱 위에 덮어 설치가 안 됐다 → 프로젝트 전용 키로 고정.
+    // 키·비밀번호는 저장소 밖 파일(기본 D:\03_XREAL\signing\signing.txt, 환경 변수 SOUVENIRHUNT_SIGNING로 바꿈)에서 읽고,
+    // 빌드 동안만 PlayerSettings에 넣었다가 되돌린다(ProjectSettings에 키 경로·비밀번호가 남지 않게). 파일이 없으면 경고 후 개발용 키로 빌드.
+    // (B 갈래 visual-polish e598193과 같은 코드)
+    const string DefaultSigningFile = @"D:\03_XREAL\signing\signing.txt";
+
+    struct SigningSnapshot { public bool applied, useCustom; public string ks, alias; }
+
+    static SigningSnapshot ApplyReleaseSigning()
+    {
+        var snap = new SigningSnapshot { useCustom = PlayerSettings.Android.useCustomKeystore, ks = PlayerSettings.Android.keystoreName, alias = PlayerSettings.Android.keyaliasName };
+        string file = Environment.GetEnvironmentVariable("SOUVENIRHUNT_SIGNING");
+        if (string.IsNullOrEmpty(file)) file = DefaultSigningFile;
+        if (!File.Exists(file))
+        {
+            Debug.LogWarning($"[SouvenirHuntSetup] 서명 파일 {file} 없음 — 개발용 키로 빌드(기기에 있는 앱 위에 덮어 설치가 안 될 수 있음)");
+            return snap;
+        }
+        var kv = new Dictionary<string, string>();
+        foreach (var line in File.ReadAllLines(file))
+        {
+            int i = line.IndexOf('=');
+            if (line.TrimStart().StartsWith("#") || i <= 0) continue;
+            kv[line.Substring(0, i).Trim()] = line.Substring(i + 1).Trim();
+        }
+        if (!kv.TryGetValue("keystore", out var ks) || !File.Exists(ks) || !kv.ContainsKey("alias") || !kv.ContainsKey("storepass"))
+        {
+            Debug.LogError($"[SouvenirHuntSetup] 서명 파일 {file} 내용이 잘못됨(keystore·alias·storepass 필요) — 개발용 키로 빌드");
+            return snap;
+        }
+        PlayerSettings.Android.useCustomKeystore = true;
+        PlayerSettings.Android.keystoreName = ks;
+        PlayerSettings.Android.keystorePass = kv["storepass"];
+        PlayerSettings.Android.keyaliasName = kv["alias"];
+        PlayerSettings.Android.keyaliasPass = kv.TryGetValue("keypass", out var kp) ? kp : kv["storepass"];
+        snap.applied = true;
+        Debug.Log($"[SouvenirHuntSetup] 서명: 프로젝트 전용 키 {Path.GetFileName(ks)} (alias {kv["alias"]})");
+        return snap;
+    }
+
+    static void RestoreSigning(SigningSnapshot snap)
+    {
+        if (!snap.applied) return;
+        PlayerSettings.Android.useCustomKeystore = snap.useCustom;
+        PlayerSettings.Android.keystoreName = snap.ks;
+        PlayerSettings.Android.keyaliasName = snap.alias;
+        PlayerSettings.Android.keystorePass = "";
+        PlayerSettings.Android.keyaliasPass = "";
+    }
+
     [MenuItem("XREAL/11. Build SouvenirHunt APK")]
     public static void BuildApk()
     {
@@ -151,7 +201,10 @@ public static partial class SouvenirHuntSetup
         };
         var matSnaps = ReadMaterialsOnDisk();
         int fixedBefore = RestoreMaterials(matSnaps, "빌드 전");
-        var report = BuildPipeline.BuildPlayer(options);
+        var signing = ApplyReleaseSigning();
+        UnityEditor.Build.Reporting.BuildReport report;
+        try { report = BuildPipeline.BuildPlayer(options); }
+        finally { RestoreSigning(signing); }
         bool ok = report.summary.result == UnityEditor.Build.Reporting.BuildResult.Succeeded;
         if (!ok) PlayerSettings.Android.bundleVersionCode = prevCode;
         int strippedDuring = RestoreMaterials(matSnaps, "빌드 중");

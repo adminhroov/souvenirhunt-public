@@ -20,6 +20,98 @@ public static partial class SouvenirHuntSetup
     const string SupBodyPart = "StartUpPark_Gacha_Machine.005";
     const string SupGlassPart = "StartUpPark_Gacha_Machine.006";
     const string SupDoorPart = "StartUpPark_Gacha_Machine.007";
+    // 11-23 기계 겉모양 = ETRI(사용자 "인형뽑기도 바꿔줘"). ETRI_Props_Gatcha는 StartUpPark_Gacha_Machine.005와 정점·삼각형·UV까지 같은 메시(같은 키트)라
+    // 형상·집게·배출구 등 게임 수치는 그대로 두고 StartUpPark 아틀라스 재질만 ETRI_Props 텍스처로 바꾼다. 원본 재질을 복사해 텍스처만 교체 →
+    // 유리(블렌드)·컷아웃·발광 설정은 지금 기계 그대로. 빈 문자열이면 StartUpPark 겉모양.
+    const string SupSkinMatPath = "Assets/Models/ETRI/ETRI_ETRI_Props_Mat.mat";
+    static readonly string[] SupSkinTexProps = { "_BaseMap", "_MainTex", "_BumpMap", "_MetallicGlossMap", "_EmissionMap" };
+
+    /// <summary>StartUpPark 아틀라스 재질 → 같은 설정에 ETRI 텍스처를 넣은 사본(Assets/Settings/ClawSup/Skin_*.mat). 대상이 아니거나 ETRI 재질이 없으면 그대로.</summary>
+    static Material SupSkin(Material src)
+    {
+        if (src == null || string.IsNullOrEmpty(SupSkinMatPath) || !src.name.StartsWith("StartUpPark_StartUpPark_")) return src;
+        var skin = AssetDatabase.LoadAssetAtPath<Material>(SupSkinMatPath);
+        if (skin == null) { Debug.LogWarning($"[SouvenirHuntSetup] 기계 겉모양 재질 {SupSkinMatPath} 없음(메뉴 33 필요) — StartUpPark 겉모양 유지"); return src; }
+        System.IO.Directory.CreateDirectory(SupMeshFolder);
+        string path = $"{SupMeshFolder}/Skin_ETRI_{src.name}.mat";
+        var mat = AssetDatabase.LoadAssetAtPath<Material>(path);
+        if (mat == null) { mat = new Material(src); AssetDatabase.CreateAsset(mat, path); mat = AssetDatabase.LoadAssetAtPath<Material>(path); }
+        mat.CopyPropertiesFromMaterial(src);
+        mat.shaderKeywords = src.shaderKeywords;
+        mat.renderQueue = src.renderQueue;
+        foreach (var prop in SupSkinTexProps)
+            if (mat.HasProperty(prop) && skin.HasProperty(prop)) mat.SetTexture(prop, SupSkinFixTex(skin.GetTexture(prop) as Texture2D, prop == "_BumpMap"));
+        // 발광: 원본이 발광을 쓰는데 ETRI에 발광 맵이 없으면 끔
+        if (mat.HasProperty("_EmissionMap") && mat.IsKeywordEnabled("_EMISSION") && mat.GetTexture("_EmissionMap") == null) mat.DisableKeyword("_EMISSION");
+        EditorUtility.SetDirty(mat);
+        return mat;
+    }
+
+    // 11-23 ETRI 텍스처는 상단 간판 띠 4칸이 똑바로 그려져 있어(StartUpPark 텍스처는 거꾸로 그려 놓아 기계에서 똑바로 보임) 같은 UV에 붙이면 글자가 뒤집힌다.
+    // 그 4칸(기계 메시 UV에서 잰 면 사각형, u0·v0(위)·u1·v1(아래), 2048 기준 픽셀/2048)만 제자리 180° 회전한 기계 전용 사본을 쓴다. 노멀은 회전에 맞춰 x·y 부호 반전.
+    static readonly Rect[] SupSkinFlipRects =
+    {
+        Rect.MinMaxRect(7.3f / 2048f, 68.2f / 2048f, 442.7f / 2048f, 159.2f / 2048f),
+        Rect.MinMaxRect(442.7f / 2048f, 68.2f / 2048f, 878.2f / 2048f, 159.2f / 2048f),
+        Rect.MinMaxRect(878.2f / 2048f, 68.2f / 2048f, 1313.6f / 2048f, 159.2f / 2048f),
+        Rect.MinMaxRect(1313.6f / 2048f, 68.2f / 2048f, 1749.1f / 2048f, 159.2f / 2048f),
+    };
+
+    static readonly Dictionary<string, (double t, Texture2D tex)> SupSkinTexCache = new Dictionary<string, (double, Texture2D)>();
+
+    static Texture2D SupSkinFixTex(Texture2D src, bool normal)
+    {
+        if (src == null) return null;
+        string srcPath = AssetDatabase.GetAssetPath(src);
+        string path = $"{SupMeshFolder}/Skin_ETRI_{System.IO.Path.GetFileNameWithoutExtension(srcPath)}_Machine.png";
+        // 한 번의 메뉴 실행 안에서는 파트마다 다시 만들지 않음(1분 안 재사용)
+        if (SupSkinTexCache.TryGetValue(path, out var c0) && c0.tex != null && EditorApplication.timeSinceStartup - c0.t < 60) return c0.tex;
+        var made = SupSkinFixTexMake(srcPath, path, normal) ?? src;
+        SupSkinTexCache[path] = (EditorApplication.timeSinceStartup, made);
+        return made;
+    }
+
+    static Texture2D SupSkinFixTexMake(string srcPath, string path, bool normal)
+    {
+        var raw = new Texture2D(2, 2, TextureFormat.RGBA32, false, true);
+        if (!raw.LoadImage(System.IO.File.ReadAllBytes(srcPath))) { UnityEngine.Object.DestroyImmediate(raw); return null; }
+        int w = raw.width, h = raw.height;
+        var px = raw.GetPixels32();
+        foreach (var r in SupSkinFlipRects)
+        {
+            // 텍스처 행 0 = 아래 → 위에서 잰 v를 아래 기준으로
+            int x0 = Mathf.RoundToInt(r.xMin * w), x1 = Mathf.RoundToInt(r.xMax * w);
+            int y0 = h - Mathf.RoundToInt(r.yMax * h), y1 = h - Mathf.RoundToInt(r.yMin * h);
+            int rw = x1 - x0, rh = y1 - y0;
+            var block = new Color32[rw * rh];
+            for (int y = 0; y < rh; y++) for (int x = 0; x < rw; x++) block[y * rw + x] = px[(y0 + y) * w + x0 + x];
+            for (int y = 0; y < rh; y++) for (int x = 0; x < rw; x++)
+            {
+                var c = block[(rh - 1 - y) * rw + (rw - 1 - x)];
+                if (normal) { c.r = (byte)(255 - c.r); c.g = (byte)(255 - c.g); }
+                px[(y0 + y) * w + x0 + x] = c;
+            }
+        }
+        raw.SetPixels32(px);
+        System.IO.File.WriteAllBytes(path, raw.EncodeToPNG());
+        UnityEngine.Object.DestroyImmediate(raw);
+        AssetDatabase.ImportAsset(path);
+        // 원본과 같은 임포트 설정(노멀 맵·sRGB·압축·최대 크기)
+        var si = (TextureImporter)AssetImporter.GetAtPath(srcPath);
+        var di = (TextureImporter)AssetImporter.GetAtPath(path);
+        if (si != null && di != null)
+        {
+            var ts = new TextureImporterSettings();
+            si.ReadTextureSettings(ts);
+            di.SetTextureSettings(ts);
+            di.SetPlatformTextureSettings(si.GetPlatformTextureSettings("Android"));
+            di.textureCompression = si.textureCompression;
+            di.maxTextureSize = si.maxTextureSize;
+            di.SaveAndReimport();
+        }
+        return AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+    }
+
     // 콘솔 성분 기준점(프리팹 루트 m, 10-19 실측) — 가장 가까운 성분(3cm 안)
     static readonly Vector3 SupJoystickRef = new Vector3(0.160f, 0.719f, 1.012f);
     static readonly Vector3 SupButtonRef = new Vector3(-0.154f, 0.686f, 1.011f);
@@ -45,7 +137,7 @@ public static partial class SouvenirHuntSetup
             n = mesh.normals.Select(x => m.MultiplyVector(x).normalized).ToArray(),
             uv = mesh.uv,
             tris = mesh.triangles,
-            mat = t.GetComponent<MeshRenderer>()?.sharedMaterial,
+            mat = SupSkin(t.GetComponent<MeshRenderer>()?.sharedMaterial),
         };
     }
 
@@ -240,7 +332,7 @@ public static partial class SouvenirHuntSetup
         if (parts.rig != null) parts.rig.mesh = M("Sup_ClawSkin");
         var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(StartUpParkPrefabPath);
         var t = prefab != null ? prefab.GetComponentsInChildren<Transform>(true).FirstOrDefault(x => x.name == SupBodyPart) : null;
-        if (t != null) parts.mat = t.GetComponent<MeshRenderer>().sharedMaterial;
+        if (t != null) parts.mat = SupSkin(t.GetComponent<MeshRenderer>().sharedMaterial);
     }
 
     static void WarnIfOffSup(StringBuilder report, string what, float measured, float constant)

@@ -67,6 +67,7 @@ namespace SouvenirHunt
             if (!TryGetAlignPose(out var pos, out var rot)) return;
             Root.position = pos;
             Root.rotation = rot;
+            axisValid = false; // 11-26 정면을 다시 잡음 — 기울기 축도 지금 고개 방향으로 바로
             // 11-10(2) 기울기 축은 매 프레임 onBeforeRender가 지금 고개 방향으로 갱신 — 여기서 따로 다시 숙일 필요 없음
         }
 
@@ -178,14 +179,68 @@ namespace SouvenirHunt
                 rigBaseRot = rig.rotation;
                 rigBasePos = rig.position;
                 tiltPivot = cam.position;
+                axisValid = false; // 11-26 켜는 순간의 고개 방향이 축
             }
-            Vector3 f = UntiltedCamForward();
-            f.y = 0f;
-            if (f.sqrMagnitude < 1e-6f) f = rigBaseRot * Vector3.forward; // 수직으로 내려다보는 순간 — 리그 정면 기준
-            f.Normalize();
+            Vector3 head = UntiltedCamForward();
+            head.y = 0f;
+            if (head.sqrMagnitude < 1e-6f) head = rigBaseRot * Vector3.forward; // 수직으로 내려다보는 순간 — 리그 정면 기준
+            head.Normalize();
+            Vector3 f = AxisForward(head);
             Quaternion q = deg != 0f ? Quaternion.AngleAxis(deg, Vector3.Cross(Vector3.up, f)) * rigBaseRot : rigBaseRot;
             rig.SetPositionAndRotation(tiltPivot + (q * Quaternion.Inverse(rigBaseRot)) * (rigBasePos - tiltPivot), q);
             tiltApplied = deg != 0f;
+        }
+
+        // ─ 11-26 기울기 축 따라가기 ─
+        // 사용자 "게임 중 고개를 좌우로 돌리면 카메라가 좌우로만 도는 게 아니라 다른 축이 같이 도는 것 같다". 원인: 11-10(2)부터 축을 매 프레임 지금 고개 방향에 맞췄다
+        //   → 카메라 = Yaw(고개)·Pitch(θ). 고개를 Δ만큼 돌리면 화면 기준으로는 "카메라 위쪽에서 θ만큼 기운 축"으로 Δ 회전 = 좌우 회전 cosθ + 롤 sinθ(13.2°면 롤이 23%).
+        //   실제 머리는 수평으로만 도는데 콘텐츠는 롤이 섞여 움직인다(현실 배경과 어긋나 보임). 반대로 축을 완전히 고정하면 돌리는 동안은 정확하지만 옆을 보면 수평이 기운다(11-10 QA).
+        //   lazy = 둘의 절충: 축과 고개 방향 차이가 dead° 안이면 축 고정(돌리는 동안 롤 섞임 없음, 수평 기울기 ≤ θ·sin(dead)),
+        //   넘으면 넘은 만큼을 1초에 rate 비율로 천천히 따라간다(오래 옆을 보면 수평이 서서히 돌아옴). 재정렬·기울기 켤 때는 지금 고개 방향으로 바로 맞춤.
+        string tiltFollow = "lazy";
+        float tiltDeadDeg = 10f, tiltFollowRate = 0.5f;
+        Vector3 axisFwd = Vector3.forward;
+        bool axisValid;
+        float axisTime;
+
+        /// <summary>config clawViewTiltFollow(lazy|frame|fixed)·clawViewTiltDeadDeg·clawViewTiltFollowRate — 세션이 config 적용 때 부른다</summary>
+        public void SetViewTiltFollow(string mode, float deadDeg, float rate)
+        {
+            mode = (mode ?? "").Trim().ToLowerInvariant();
+            if (mode != "frame" && mode != "fixed") mode = "lazy";
+            deadDeg = Mathf.Clamp(deadDeg, 0f, 60f);
+            rate = Mathf.Clamp(rate, 0f, 5f);
+            if (mode == tiltFollow && Mathf.Approximately(deadDeg, tiltDeadDeg) && Mathf.Approximately(rate, tiltFollowRate)) return;
+            tiltFollow = mode;
+            tiltDeadDeg = deadDeg;
+            tiltFollowRate = rate;
+            Debug.Log($"[ViewTilt] 축 따라가기 {mode}{(mode == "lazy" ? $" (고정 구간 ±{deadDeg:0.#}°, 따라가기 {rate:0.##}/s)" : "")}");
+        }
+
+        /// <summary>기울기 축의 기준 전방(수평) — head = 지금 고개의 평평한 전방</summary>
+        Vector3 AxisForward(Vector3 head)
+        {
+            float now = Time.unscaledTime;
+            if (tiltFollow == "frame" || !axisValid)
+            {
+                axisFwd = head;
+                axisValid = true;
+                axisTime = now;
+                return axisFwd;
+            }
+            float dt = Mathf.Clamp(now - axisTime, 0f, 0.1f);
+            axisTime = now;
+            if (tiltFollow == "fixed" || dt <= 0f) return axisFwd;
+            float delta = Vector3.SignedAngle(axisFwd, head, Vector3.up);
+            float over = Mathf.Abs(delta) - tiltDeadDeg;
+            if (over > 0f)
+            {
+                float step = Mathf.Min(over, over * tiltFollowRate * dt);
+                axisFwd = Quaternion.AngleAxis(Mathf.Sign(delta) * step, Vector3.up) * axisFwd;
+                axisFwd.y = 0f;
+                axisFwd.Normalize();
+            }
+            return axisFwd;
         }
 
         void OnDestroy()
