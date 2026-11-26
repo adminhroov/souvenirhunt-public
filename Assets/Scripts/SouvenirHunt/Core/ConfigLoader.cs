@@ -116,6 +116,8 @@ hdr=false
 
 # 사운드(10-12부터 켬 — VIP 인증·보상 효과음). false면 전부 무음. 음원이 없는 자리는 원래 무음
 audio=true
+# 11-26 인형뽑기 기계 효과음 크기 0~1: 집게 움직일 때·내려올 때·잡을 때·올라갈 때·상품이 배출구를 통과할 때. 0 = 이 효과음만 끔
+clawSfxVolume=0.8
 
 # 시간초과(10개 못 채움)여도 보상 안내 화면을 열지: 기본 false(전체 수집 시에만 보상). 발주처 확정 시 변경
 rewardOnPartial=false
@@ -395,6 +397,7 @@ prizeTimeoutSeconds=8
                         break;
                     case "clawViewTiltDeadDeg": cfg.clawViewTiltDeadDeg = ParseClampFloat(cfg, key, value, cfg.clawViewTiltDeadDeg, 0f, 60f, i); break;
                     case "clawViewTiltFollowRate": cfg.clawViewTiltFollowRate = ParseClampFloat(cfg, key, value, cfg.clawViewTiltFollowRate, 0f, 5f, i); break;
+                    case "clawSfxVolume": cfg.clawSfxVolume = ParseClampFloat(cfg, key, value, cfg.clawSfxVolume, 0f, 1f, i); break;
                     case "clawForceQuitSeconds": cfg.clawForceQuitSeconds = ParseClampFloat(cfg, key, value, cfg.clawForceQuitSeconds, 0f, 600f, i); break;
                     case "clawLinkLossSignature": cfg.clawLinkLossSignature = value.Trim(); break; // 11-26 비우면 감시 끔
                     case "clawBombForce":
